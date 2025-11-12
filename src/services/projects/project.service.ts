@@ -504,6 +504,45 @@ export class ProjectService {
   }
 
   /**
+   * Get matched profiles for a project
+   * Returns all profiles matched to this project with their skill categories
+   */
+  async getMatchedProfiles(projectId: string): Promise<any> {
+    // Verify project exists
+    const project = await prisma.projects.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project || project.deleted_at) {
+      throw new AppError('Project not found', 404);
+    }
+
+    // Get all matched profiles with profile details and skill categories
+    const matchedProfiles = await prisma.project_matched_profiles.findMany({
+      where: {
+        project_id: projectId,
+      },
+      include: {
+        profiles: {
+          include: {
+            profile_skills: {
+              include: {
+                skill_categories: true,
+              },
+            },
+          },
+        },
+        skill_categories: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    return matchedProfiles;
+  }
+
+  /**
    * Save matched profiles for a project
    * Only uses status enum: matched, shared, onboarded
    */
@@ -702,6 +741,119 @@ export class ProjectService {
     });
 
     return updated;
+  }
+
+  /**
+   * Create project from project request (approve project request)
+   * This method converts a pending project request into an actual project
+   */
+  async createProjectFromRequest(
+    projectRequestId: string,
+    userId: string
+  ): Promise<ProjectWithDetails> {
+    // Fetch the project request with all details
+    const projectRequest = await prisma.project_requests.findUnique({
+      where: { id: projectRequestId },
+      include: {
+        project_request_requirements: {
+          include: {
+            skill_categories: true,
+          },
+        },
+        employers: true,
+      },
+    });
+
+    if (!projectRequest) {
+      throw new AppError('Project request not found', 404);
+    }
+
+    if (projectRequest.status === 'project_created') {
+      throw new AppError('Project already created from this request', 400);
+    }
+
+    if (!projectRequest.employers) {
+      throw new AppError('Employer not found for this project request', 404);
+    }
+
+    // Use transaction to create project and update request status
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Generate unique project code using timestamp + random
+        const prjTimestamp = Date.now().toString().substring(5);
+        const prjRandom = Math.floor(Math.random() * 100)
+          .toString()
+          .padStart(2, '0');
+        const code = `PRJ${prjTimestamp}${prjRandom}`;
+
+        // Create the project from the request
+        const project = await tx.projects.create({
+          data: {
+            code,
+            name: projectRequest.project_title,
+            description: projectRequest.project_description,
+            location: projectRequest.location,
+            employer_id: projectRequest.employer_id!,
+            contact_phone: projectRequest.employers?.phone || '',
+            status: 'planning', // Initial status when created from request
+            is_active: true,
+            created_by_user_id: userId,
+          },
+          include: {
+            employers: true,
+            project_resource_requirements: {
+              include: {
+                skill_categories: true,
+              },
+            },
+          },
+        });
+
+        // Create project resource requirements from project request requirements
+        if (projectRequest.project_request_requirements.length > 0) {
+          await tx.project_resource_requirements.createMany({
+            data: projectRequest.project_request_requirements.map((req) => ({
+              project_id: project.id,
+              skill_category_id: req.skill_category_id,
+              required_count: req.required_count,
+              notes: req.notes,
+            })),
+          });
+        }
+
+        // Update project request status to project_created and link to project
+        await tx.project_requests.update({
+          where: { id: projectRequestId },
+          data: {
+            status: 'project_created',
+            reviewed_at: new Date(),
+            reviewed_by_user_id: userId,
+            project_id: project.id,
+          },
+        });
+
+        // Fetch the complete project with all requirements
+        const completeProject = await tx.projects.findUnique({
+          where: { id: project.id },
+          include: {
+            employers: true,
+            project_resource_requirements: {
+              include: {
+                skill_categories: true,
+              },
+            },
+          },
+        });
+
+        return completeProject!;
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      }
+    );
+
+    return result as ProjectWithDetails;
   }
 }
 

@@ -16,4 +16,7 @@ router.post('/:id/matched-profiles', projectController.saveMatchedProfiles);
 router.post('/:id/share-with-employer', projectController.shareWithEmployer);
 router.get('/:id/shared-profiles', projectController.getSharedProfiles);
 
+// Create project from project request (approve and convert request to project)
+router.post('/from-request/:projectRequestId', projectController.createProjectFromRequest);
+
 export default router;

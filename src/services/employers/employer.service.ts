@@ -98,6 +98,16 @@ export class EmployerService {
             additional_notes: true,
             reviewed_at: true,
             created_at: true,
+            project_request_requirements: {
+              include: {
+                skill_categories: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -122,7 +132,7 @@ export class EmployerService {
 
   async registerEmployer(
     data: RegisterEmployerDto
-  ): Promise<{ employer: Employer; token: string; project: any }> {
+  ): Promise<{ employer: Employer; token: string; projectRequest: any }> {
     // Validate required fields
     if (!data.project_name || !data.project_name.trim()) {
       throw new AppError('Project name is required', 400);
@@ -234,13 +244,6 @@ export class EmployerService {
           },
         });
 
-        // Generate unique project code using timestamp + random to avoid conflicts
-        const prjTimestamp = Date.now().toString().substring(5); // Last 8 digits of timestamp
-        const prjRandom = Math.floor(Math.random() * 100)
-          .toString()
-          .padStart(2, '0');
-        const code = `PRJ${prjTimestamp}${prjRandom}`;
-
         // Build project location from provided details
         const locationParts = [
           data.site_address,
@@ -253,21 +256,23 @@ export class EmployerService {
         const projectLocation =
           locationParts.length > 0 ? locationParts.join(', ') : data.registered_address || '';
 
-        // Create project with full details from signup
-        const project = await tx.projects.create({
+        // Create project_request instead of project
+        // Status is 'pending' until BS team reviews and approves
+        const projectRequest = await tx.project_requests.create({
           data: {
-            code,
-            name: data.project_name,
-            employer_id: employer.id,
+            project_title: data.project_name,
+            project_description: data.project_description,
             location: projectLocation,
-            contact_phone: data.phone,
-            status: 'pending', // Status is pending until BS team approves
-            description: data.project_description,
-            is_active: false, // is_active = false (pending approval)
+            employer_id: employer.id,
+            estimated_start_date: data.estimated_start_date,
+            estimated_duration_days: data.estimated_duration_days,
+            estimated_budget: data.estimated_budget,
+            additional_notes: data.additional_notes,
+            status: 'pending', // Status is pending until BS team reviews
           },
         });
 
-        // Insert worker requirements if provided
+        // Insert worker requirements into project_request_requirements
         const workerRequirements = [];
         if (data.worker_requirements && data.worker_requirements.length > 0) {
           // Batch fetch all skill categories first
@@ -292,15 +297,16 @@ export class EmployerService {
             }
           }
 
-          // Now create all project resource requirements
+          // Now create all project_request_requirements
           for (const req of data.worker_requirements) {
             const skillCategory = categoryMap.get(req.category);
             if (skillCategory) {
-              const requirement = await tx.project_resource_requirements.create({
+              const requirement = await tx.project_request_requirements.create({
                 data: {
-                  project_id: project.id,
+                  project_request_id: projectRequest.id,
                   skill_category_id: skillCategory.id,
                   required_count: req.count,
+                  notes: req.notes,
                 },
                 include: {
                   skill_categories: true,
@@ -311,7 +317,7 @@ export class EmployerService {
           }
         }
 
-        return { employer, project: { ...project, worker_requirements: workerRequirements } };
+        return { employer, projectRequest: { ...projectRequest, worker_requirements: workerRequirements } };
       },
       {
         maxWait: 10000, // Maximum wait time in ms
@@ -330,7 +336,7 @@ export class EmployerService {
       { expiresIn: '7d' }
     );
 
-    return { employer: result.employer, token, project: result.project };
+    return { employer: result.employer, token, projectRequest: result.projectRequest };
   }
 
   async createEmployer(data: CreateEmployerDto): Promise<Employer> {

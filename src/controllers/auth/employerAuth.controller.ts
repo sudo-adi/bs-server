@@ -3,9 +3,9 @@ import employerService from '@/services/employers/employer.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 
-// Register new employer with auto-created inactive project
+// Register new employer with auto-created project request
 export const register = catchAsync(async (req: Request, res: Response) => {
-  const { employer, token, project } = await employerService.registerEmployer(req.body);
+  const { employer, token, projectRequest } = await employerService.registerEmployer(req.body);
 
   // Remove password from response
   const { password_hash, ...employerData } = employer;
@@ -13,10 +13,10 @@ export const register = catchAsync(async (req: Request, res: Response) => {
   res.status(201).json({
     success: true,
     message:
-      'Employer registered successfully. Your project has been created and is pending approval.',
+      'Employer registered successfully. Your project request has been submitted and is pending review.',
     data: {
       employer: employerData,
-      project,
+      projectRequest,
       token,
     },
   });

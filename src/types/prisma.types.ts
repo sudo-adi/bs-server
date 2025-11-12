@@ -266,9 +266,9 @@ export interface RegisterEmployerDto {
   authorized_person_contact: string;
   authorized_person_address: string;
 
-  // Project Information (Required)
-  project_name: string;
-  project_description: string;
+  // Project Request Information (Required) - Maps to project_requests table
+  project_name: string; // Maps to project_title
+  project_description: string; // Maps to project_description
   site_address: string;
   city: string;
   district: string;
@@ -276,14 +276,17 @@ export interface RegisterEmployerDto {
   landmark?: string;
   postal_code: string;
 
-  // Optional project fields
-  project_type?: string;
-  duration_months?: number;
+  // Optional project request fields - Maps to project_requests table
+  estimated_start_date?: Date; // Maps to estimated_start_date
+  estimated_duration_days?: number; // Maps to estimated_duration_days (in days, not months)
+  estimated_budget?: number; // Maps to estimated_budget
+  additional_notes?: string; // Maps to additional_notes
 
-  // Worker Requirements (Required)
+  // Worker Requirements (Required) - Maps to project_request_requirements table
   worker_requirements: Array<{
-    category: string;
-    count: number;
+    category: string; // Will be linked to skill_category_id
+    count: number; // Maps to required_count
+    notes?: string; // Maps to notes
   }>;
 }
 

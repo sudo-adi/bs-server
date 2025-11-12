@@ -56,16 +56,12 @@ export const getProjectById = catchAsync(async (req: Request, res: Response) => 
 export const getMatchedProfiles = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
 
-  // TODO: Implement skill matching service
-  // const matchedProfiles = await skillMatchingService.getMatchedProfiles(id);
+  const matchedProfiles = await projectService.getMatchedProfiles(id);
 
   res.status(200).json({
     success: true,
-    message: 'Skill matching feature coming soon',
-    data: {
-      project_id: id,
-      matched_profiles: [],
-    },
+    message: 'Matched profiles retrieved successfully',
+    data: matchedProfiles,
   });
 });
 
@@ -149,5 +145,25 @@ export const getSharedProfiles = catchAsync(async (req: Request, res: Response) 
   res.status(200).json({
     success: true,
     data: profiles,
+  });
+});
+
+// Create project from project request (approve project request)
+export const createProjectFromRequest = catchAsync(async (req: Request, res: Response) => {
+  const projectRequestId = req.params.projectRequestId;
+
+  // Try to get userId from auth middleware first, then from request body
+  const userId = (req as any).user?.id || req.body.userId;
+
+  if (!userId) {
+    throw new Error('User ID not found in request. Please ensure you are authenticated.');
+  }
+
+  const project = await projectService.createProjectFromRequest(projectRequestId, userId);
+
+  res.status(201).json({
+    success: true,
+    message: 'Project created successfully from project request',
+    data: project,
   });
 });
