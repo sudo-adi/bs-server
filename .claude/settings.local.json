@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(tree:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(npm run db:setup:*)",
+      "Read(//Users/aditya/Desktop/xyz/**)",
+      "Bash(npm install:*)",
+      "Bash(ping:*)",
+      "Bash(touch:*)",
+      "Bash(nslookup:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(kill:*)",
+      "Bash(npx prisma db pull:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma format:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e:*)",
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

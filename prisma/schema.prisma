@@ -1,0 +1,643 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model activity_logs {
+  action     String    @db.VarChar(100)
+  module     String    @db.VarChar(100)
+  record_id  String?
+  old_value  String?
+  new_value  String?
+  ip_address String?   @db.VarChar(45)
+  user_agent String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model addresses {
+  address_type    String?   @default("permanent") @db.VarChar(50)
+  house_number    String?   @db.VarChar(100)
+  village_or_city String?   @db.VarChar(255)
+  district        String?   @db.VarChar(255)
+  state           String?   @db.VarChar(255)
+  postal_code     String?   @db.VarChar(10)
+  landmark        String?   @db.VarChar(255)
+  police_station  String?   @db.VarChar(255)
+  post_office     String?   @db.VarChar(255)
+  is_current      Boolean?  @default(false)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id      String?   @db.Uuid
+  profiles        profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model bank_accounts {
+  account_holder_name String    @db.VarChar(255)
+  account_number      String    @db.VarChar(50)
+  ifsc_code           String    @db.VarChar(20)
+  bank_name           String?   @db.VarChar(255)
+  branch_name         String?   @db.VarChar(255)
+  account_type        String?   @default("savings") @db.VarChar(50)
+  is_primary          Boolean?  @default(false)
+  is_verified         Boolean?  @default(false)
+  verification_status String?   @default("pending") @db.VarChar(50)
+  verified_at         DateTime? @db.Timestamp(6)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id          String?   @db.Uuid
+  verified_by_user_id String?   @db.Uuid
+  profiles            profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               users?    @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+}
+
+model batch_enrollments {
+  enrollment_date       DateTime?         @default(now()) @db.Timestamp(6)
+  completion_date       DateTime?         @db.Date
+  status                String?           @default("enrolled") @db.VarChar(50)
+  attendance_percentage Decimal?          @db.Decimal(5, 2)
+  score                 Decimal?          @db.Decimal(5, 2)
+  notes                 String?
+  created_at            DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?         @default(now()) @db.Timestamp(6)
+  id                    String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id            String?           @db.Uuid
+  batch_id              String?           @db.Uuid
+  enrolled_by_user_id   String?           @db.Uuid
+  training_batches      training_batches? @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users?            @relation(fields: [enrolled_by_user_id], references: [id], onUpdate: NoAction)
+  profiles              profiles?         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documents             documents[]
+
+  @@unique([profile_id, batch_id], map: "uq_profile_batch")
+  @@index([batch_id, status], map: "idx_batch_enrollments_batch_status")
+  @@index([profile_id, status], map: "idx_batch_enrollments_profile_status")
+}
+
+model documents {
+  document_number                            String?              @db.VarChar(100)
+  file_name                                  String               @db.VarChar(255)
+  file_url                                   String               @db.VarChar(500)
+  file_size                                  Int?
+  verification_status                        String?              @default("pending") @db.VarChar(50)
+  verified_at                                DateTime?            @db.Timestamp(6)
+  uploaded_at                                DateTime?            @default(now()) @db.Timestamp(6)
+  expiry_date                                DateTime?            @db.Date
+  created_at                                 DateTime?            @default(now()) @db.Timestamp(6)
+  id                                         String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id                                 String?              @db.Uuid
+  uploaded_by_user_id                        String?              @db.Uuid
+  verified_by_user_id                        String?              @db.Uuid
+  document_category_id                       String?              @db.Uuid
+  qualification_id                           String?              @db.Uuid
+  batch_enrollment_id                        String?              @db.Uuid
+  batch_enrollments                          batch_enrollments?   @relation(fields: [batch_enrollment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  document_categories                        document_categories? @relation(fields: [document_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles                                   profiles?            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  qualifications                             qualifications?      @relation(fields: [qualification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_documents_uploaded_by_user_idTousers users?               @relation("documents_uploaded_by_user_idTousers", fields: [uploaded_by_user_id], references: [id], onUpdate: NoAction)
+  users_documents_verified_by_user_idTousers users?               @relation("documents_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+}
+
+model employers {
+  employer_code                              String                        @unique @db.VarChar(50)
+  company_name                               String                        @db.VarChar(255)
+  client_name                                String                        @db.VarChar(255)
+  email                                      String                        @unique @db.VarChar(255)
+  password_hash                              String                        @db.VarChar(255)
+  phone                                      String                        @db.VarChar(20)
+  alt_phone                                  String?                       @db.VarChar(20)
+  registered_address                         String?
+  company_registration_number                String?                       @db.VarChar(100)
+  gst_number                                 String?                       @db.VarChar(20)
+  is_active                                  Boolean?                      @default(true)
+  is_verified                                Boolean?                      @default(false)
+  verified_at                                DateTime?                     @db.Timestamp(6)
+  last_login                                 DateTime?                     @db.Timestamp(6)
+  created_at                                 DateTime?                     @default(now()) @db.Timestamp(6)
+  updated_at                                 DateTime?                     @default(now()) @db.Timestamp(6)
+  id                                         String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  verified_by_user_id                        String?                       @db.Uuid
+  deleted_at                                 DateTime?                     @db.Timestamp(6)
+  deleted_by_user_id                         String?                       @db.Uuid
+  employer_authorized_persons                employer_authorized_persons[]
+  users_employers_deleted_by_user_idTousers  users?                        @relation("employers_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_employers_verified_by_user_idTousers users?                        @relation("employers_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+  project_requests                           project_requests[]
+  projects                                   projects[]
+}
+
+model interactions {
+  interaction_date    DateTime?          @default(now()) @db.Timestamp(6)
+  subject             String?            @db.VarChar(255)
+  description         String?
+  outcome             String?            @db.VarChar(100)
+  next_follow_up_date DateTime?          @db.Date
+  created_at          DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?          @default(now()) @db.Timestamp(6)
+  id                  String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id          String?            @db.Uuid
+  created_by_user_id  String?            @db.Uuid
+  interaction_type_id String?            @db.Uuid
+  profiles            profiles?          @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_interactions_profiles")
+  users               users?             @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  interaction_types   interaction_types? @relation(fields: [interaction_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model news_updates {
+  project_name      String    @db.VarChar(500)
+  sector            String    @default("N/A") @db.VarChar(200)
+  company_authority String?   @db.VarChar(300)
+  location          String?   @db.VarChar(300)
+  value_cr          Decimal   @default(0) @db.Decimal(15, 2)
+  status            String?   @db.VarChar(100)
+  revised_budget    Decimal?  @db.Decimal(15, 2)
+  revised_timeline  String?   @db.VarChar(200)
+  delay_reason      String?
+  source_url        String    @unique @db.VarChar(1000)
+  source_type       String?   @db.VarChar(100)
+  summary_remarks   String    @default("N/A")
+  scraped_date      DateTime? @default(now()) @db.Timestamp(6)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  @@index([created_at], map: "idx_news_updates_created_at")
+  @@index([scraped_date], map: "idx_news_updates_scraped_date")
+  @@index([sector], map: "idx_news_updates_sector")
+  @@index([source_url], map: "idx_news_updates_source_url")
+  @@index([status], map: "idx_news_updates_status")
+  @@index([value_cr], map: "idx_news_updates_value_cr")
+}
+
+model profile_skills {
+  years_of_experience Int?              @default(0)
+  is_primary          Boolean?          @default(false)
+  verified_at         DateTime?         @db.Timestamp(6)
+  created_at          DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?         @default(now()) @db.Timestamp(6)
+  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id          String?           @db.Uuid
+  skill_category_id   String?           @db.Uuid
+  verified_by_user_id String?           @db.Uuid
+  profiles            profiles?         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_skills_profiles")
+  skill_categories    skill_categories? @relation(fields: [skill_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_skills_skill_categories")
+  users               users?            @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([skill_category_id, is_primary], map: "idx_profile_skills_skill_primary")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model profiles {
+  candidate_code                           String                     @unique(map: "profiles_profile_code_key") @db.VarChar(50)
+  phone                                    String                     @unique(map: "profiles_mobile_number_key") @db.VarChar(20)
+  alt_phone                                String?                    @db.VarChar(20)
+  email                                    String?                    @db.VarChar(255)
+  first_name                               String                     @db.VarChar(255)
+  middle_name                              String?                    @db.VarChar(255)
+  last_name                                String?                    @db.VarChar(255)
+  fathers_name                             String?                    @db.VarChar(255)
+  gender                                   String?                    @db.VarChar(20)
+  date_of_birth                            DateTime?                  @db.Date
+  is_active                                Boolean?                   @default(true)
+  created_at                               DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                               DateTime?                  @default(now()) @db.Timestamp(6)
+  profile_photo_url                        String?                    @db.VarChar(500)
+  id                                       String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  deleted_at                               DateTime?                  @db.Timestamp(6)
+  deleted_by_user_id                       String?                    @db.Uuid
+  addresses                                addresses[]
+  bank_accounts                            bank_accounts[]
+  batch_enrollments                        batch_enrollments[]
+  documents                                documents[]
+  interactions                             interactions[]
+  profile_blacklist                        profile_blacklist[]
+  profile_skills                           profile_skills[]
+  users_profiles_deleted_by_user_idTousers users?                     @relation("profiles_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project_assignments                      project_assignments[]
+  project_matched_profiles                 project_matched_profiles[]
+  qualifications                           qualifications[]
+  stage_transitions                        stage_transitions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model project_requests {
+  project_title                String                         @db.VarChar(255)
+  project_description          String?
+  location                     String?                        @db.VarChar(255)
+  estimated_start_date         DateTime?                      @db.Date
+  estimated_duration_days      Int?
+  estimated_budget             Decimal?                       @db.Decimal(15, 2)
+  additional_notes             String?
+  status                       String                         @default("pending") @db.VarChar(50)
+  reviewed_at                  DateTime?                      @db.Timestamp(6)
+  created_at                   DateTime                       @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime                       @default(now()) @db.Timestamp(6)
+  id                           String                         @id(map: "employer_project_requirements_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employer_id                  String?                        @db.Uuid
+  project_id                   String?                        @db.Uuid
+  reviewed_by_user_id          String?                        @db.Uuid
+  project_request_requirements project_request_requirements[]
+  employers                    employers?                     @relation(fields: [employer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_employer_id_fkey")
+  projects                     projects?                      @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_project_id_fkey")
+  users                        users?                         @relation(fields: [reviewed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_reviewed_by_user_id_fkey")
+
+  @@index([status], map: "idx_employer_project_requirements_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model project_resource_requirements {
+  required_count    Int               @default(0)
+  notes             String?
+  created_at        DateTime          @default(now()) @db.Timestamp(6)
+  updated_at        DateTime          @default(now()) @db.Timestamp(6)
+  id                String            @id(map: "project_skill_requirements_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_id        String?           @db.Uuid
+  skill_category_id String?           @db.Uuid
+  projects          projects?         @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_project_resource_requirements_projects")
+  skill_categories  skill_categories? @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_project_resource_requirements_skill_categories")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model projects {
+  code                                     String                          @unique(map: "projects_project_code_key") @db.VarChar(50)
+  name                                     String                          @db.VarChar(255)
+  location                                 String?                         @db.VarChar(255)
+  contact_phone                            String?                         @db.VarChar(20)
+  deployment_date                          DateTime?                       @db.Date
+  award_date                               DateTime?                       @db.Date
+  start_date                               DateTime?                       @db.Date
+  end_date                                 DateTime?                       @db.Date
+  revised_completion_date                  DateTime?                       @db.Date
+  status                                   String?                         @default("planning") @db.VarChar(50)
+  project_manager                          String?                         @db.VarChar(255)
+  description                              String?
+  po_co_number                             String?                         @db.VarChar(100)
+  is_active                                Boolean?                        @default(true)
+  is_accommodation_provided                Boolean?                        @default(false)
+  created_at                               DateTime?                       @default(now()) @db.Timestamp(6)
+  updated_at                               DateTime?                       @default(now()) @db.Timestamp(6)
+  id                                       String                          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employer_id                              String?                         @db.Uuid
+  created_by_user_id                       String?                         @db.Uuid
+  deleted_at                               DateTime?                       @db.Timestamp(6)
+  deleted_by_user_id                       String?                         @db.Uuid
+  project_assignments                      project_assignments[]
+  project_financials                       project_financials?
+  project_matched_profiles                 project_matched_profiles[]
+  project_requests                         project_requests[]
+  project_resource_requirements            project_resource_requirements[]
+  employers                                employers?                      @relation(fields: [employer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projects_employers")
+  users_projects_created_by_user_idTousers users?                          @relation("projects_created_by_user_idTousers", fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  users_projects_deleted_by_user_idTousers users?                          @relation("projects_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model qualifications {
+  institution_name      String?              @db.VarChar(255)
+  field_of_study        String?              @db.VarChar(255)
+  year_of_completion    Int?
+  percentage_or_grade   String?              @db.VarChar(50)
+  verified_at           DateTime?            @db.Timestamp(6)
+  created_at            DateTime?            @default(now()) @db.Timestamp(6)
+  id                    String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id            String?              @db.Uuid
+  verified_by_user_id   String?              @db.Uuid
+  qualification_type_id String?              @db.Uuid
+  documents             documents[]
+  profiles              profiles?            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_qualifications_profiles")
+  qualification_types   qualification_types? @relation(fields: [qualification_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users?               @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model scraper_websites {
+  url        String    @unique @db.VarChar(1000)
+  type       String?   @default("other") @db.VarChar(20)
+  is_active  Boolean?  @default(true)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  name       String?   @db.VarChar(300)
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  @@index([is_active], map: "idx_scraper_websites_is_active")
+  @@index([type], map: "idx_scraper_websites_type")
+}
+
+model skill_categories {
+  name                          String                          @unique @db.VarChar(255)
+  description                   String?
+  is_active                     Boolean?                        @default(true)
+  created_at                    DateTime?                       @default(now()) @db.Timestamp(6)
+  updated_at                    DateTime?                       @default(now()) @db.Timestamp(6)
+  id                            String                          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_skills                profile_skills[]
+  project_matched_profiles      project_matched_profiles[]
+  project_request_requirements  project_request_requirements[]
+  project_resource_requirements project_resource_requirements[]
+  training_batches              training_batches[]
+}
+
+model social_media_platform_posts {
+  platform           String              @db.VarChar(50)
+  platform_post_id   String?             @db.VarChar(255)
+  status             String?             @default("pending") @db.VarChar(50)
+  published_at       DateTime?           @db.Timestamptz(6)
+  error_message      String?
+  engagement         Json?               @default("{}")
+  created_at         DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?           @default(now()) @db.Timestamptz(6)
+  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  post_id            String?             @db.Uuid
+  social_media_posts social_media_posts? @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_social_media_platform_posts")
+
+  @@index([platform], map: "idx_platform_posts_platform")
+  @@index([status], map: "idx_platform_posts_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model social_media_posts {
+  title                       String?                       @db.VarChar(500)
+  caption                     String?
+  description                 String?
+  content                     String
+  platforms                   String[]
+  tags                        String[]                      @default([])
+  image_url                   String?
+  video_url                   String?
+  media_urls                  String[]                      @default([])
+  project_name                String?                       @db.VarChar(500)
+  source_url                  String?
+  status                      String?                       @default("draft") @db.VarChar(50)
+  scheduled_at                DateTime?                     @db.Timestamptz(6)
+  published_at                DateTime?                     @db.Timestamptz(6)
+  make_response               Json?
+  make_webhook_id             String?                       @db.VarChar(255)
+  platform_content            Json?
+  youtube_category            String?                       @db.VarChar(100)
+  youtube_privacy             String?                       @default("public") @db.VarChar(20)
+  youtube_thumbnail           String?
+  engagement                  Json?                         @default("{}")
+  created_by                  String?                       @db.VarChar(255)
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  id                          String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  social_media_platform_posts social_media_platform_posts[]
+
+  @@index([created_at(sort: Desc)], map: "idx_social_media_posts_created_at")
+  @@index([platforms], map: "idx_social_media_posts_platforms", type: Gin)
+  @@index([published_at(sort: Desc)], map: "idx_social_media_posts_published_at")
+  @@index([scheduled_at], map: "idx_social_media_posts_scheduled_at")
+  @@index([status], map: "idx_social_media_posts_status")
+  @@index([tags], map: "idx_social_media_posts_tags", type: Gin)
+}
+
+model stage_transitions {
+  from_stage              String?   @db.VarChar(50)
+  to_stage                String    @db.VarChar(50)
+  transitioned_at         DateTime? @default(now()) @db.Timestamp(6)
+  notes                   String?
+  id                      String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id              String?   @db.Uuid
+  transitioned_by_user_id String?   @db.Uuid
+  profiles                profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stage_transitions_profiles")
+  users                   users?    @relation(fields: [transitioned_by_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([profile_id, transitioned_at(sort: Desc)], map: "idx_stage_transitions_profile_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model training_batches {
+  code               String              @unique(map: "training_batches_batch_code_key") @db.VarChar(50)
+  name               String              @db.VarChar(255)
+  program_name       String              @db.VarChar(255)
+  provider           String?             @db.VarChar(255)
+  trainer_name       String?             @db.VarChar(255)
+  start_date         DateTime?           @db.Date
+  end_date           DateTime?           @db.Date
+  duration_days      Int?
+  max_capacity       Int?
+  status             String?             @default("upcoming") @db.VarChar(50)
+  location           String?             @db.VarChar(255)
+  description        String?
+  created_at         DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?           @default(now()) @db.Timestamp(6)
+  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_by_user_id String?             @db.Uuid
+  skill_category_id  String?             @db.Uuid
+  batch_enrollments  batch_enrollments[]
+  users              users?              @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  skill_categories   skill_categories?   @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  username                                                            String                     @unique @db.VarChar(255)
+  email                                                               String                     @unique @db.VarChar(255)
+  password_hash                                                       String                     @db.VarChar(255)
+  full_name                                                           String?                    @db.VarChar(255)
+  phone                                                               String?                    @db.VarChar(20)
+  is_active                                                           Boolean?                   @default(true)
+  last_login                                                          DateTime?                  @db.Timestamp(6)
+  created_at                                                          DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                                                          DateTime?                  @default(now()) @db.Timestamp(6)
+  id                                                                  String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  role_id                                                             String?                    @db.Uuid
+  activity_logs                                                       activity_logs[]
+  bank_accounts                                                       bank_accounts[]
+  batch_enrollments                                                   batch_enrollments[]
+  documents_documents_uploaded_by_user_idTousers                      documents[]                @relation("documents_uploaded_by_user_idTousers")
+  documents_documents_verified_by_user_idTousers                      documents[]                @relation("documents_verified_by_user_idTousers")
+  employers_employers_deleted_by_user_idTousers                       employers[]                @relation("employers_deleted_by_user_idTousers")
+  employers_employers_verified_by_user_idTousers                      employers[]                @relation("employers_verified_by_user_idTousers")
+  interactions                                                        interactions[]
+  profile_blacklist_profile_blacklist_blacklisted_by_user_idTousers   profile_blacklist[]        @relation("profile_blacklist_blacklisted_by_user_idTousers")
+  profile_blacklist_profile_blacklist_unblacklisted_by_user_idTousers profile_blacklist[]        @relation("profile_blacklist_unblacklisted_by_user_idTousers")
+  profile_skills                                                      profile_skills[]
+  profiles_profiles_deleted_by_user_idTousers                         profiles[]                 @relation("profiles_deleted_by_user_idTousers")
+  project_assignments                                                 project_assignments[]
+  project_matched_profiles                                            project_matched_profiles[]
+  project_requests                                                    project_requests[]
+  projects_projects_created_by_user_idTousers                         projects[]                 @relation("projects_created_by_user_idTousers")
+  projects_projects_deleted_by_user_idTousers                         projects[]                 @relation("projects_deleted_by_user_idTousers")
+  qualifications                                                      qualifications[]
+  stage_transitions                                                   stage_transitions[]
+  training_batches                                                    training_batches[]
+  role                                                                roles?                     @relation(fields: [role_id], references: [id], onUpdate: NoAction)
+
+  @@index([role_id], map: "idx_users_role_id")
+}
+
+model roles {
+  id          String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String             @unique @db.VarChar(100)
+  description String?
+  is_active   Boolean            @default(true)
+  created_at  DateTime           @default(now()) @db.Timestamp(6)
+  updated_at  DateTime           @default(now()) @db.Timestamp(6)
+  permissions role_permissions[]
+  users       users[]
+
+  @@index([name], map: "idx_roles_name")
+  @@index([is_active], map: "idx_roles_is_active")
+}
+
+/// This table contains permissions for different modules
+model role_permissions {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  role_id        String   @db.Uuid
+  module_name    String   @db.VarChar(100)
+  can_view       Boolean  @default(false)
+  can_manage     Boolean  @default(false)
+  can_export     Boolean  @default(false)
+  is_super_admin Boolean  @default(false)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @default(now()) @db.Timestamp(6)
+  role           roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([role_id, module_name], map: "uq_role_module")
+  @@index([role_id], map: "idx_role_permissions_role_id")
+  @@index([module_name], map: "idx_role_permissions_module_name")
+}
+
+model document_categories {
+  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String      @unique @db.VarChar
+  description String?
+  is_active   Boolean?    @default(true)
+  documents   documents[]
+}
+
+model employer_authorized_persons {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employer_id String    @db.Uuid
+  name        String?   @db.VarChar
+  designation String?   @db.VarChar
+  email       String?   @db.VarChar
+  phone       String?   @db.VarChar
+  address     String?
+  is_primary  Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  employers   employers @relation(fields: [employer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([employer_id], map: "idx_employer_authorized_persons_employer_id")
+}
+
+model interaction_types {
+  id           String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name         String         @unique @db.VarChar
+  is_active    Boolean?       @default(true)
+  interactions interactions[]
+}
+
+model profile_blacklist {
+  id                                                      String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id                                              String    @db.Uuid
+  reason                                                  String?
+  blacklisted_at                                          DateTime? @default(now()) @db.Timestamp(6)
+  blacklisted_by_user_id                                  String?   @db.Uuid
+  unblacklisted_at                                        DateTime? @db.Timestamp(6)
+  unblacklisted_by_user_id                                String?   @db.Uuid
+  is_active                                               Boolean?  @default(true)
+  created_at                                              DateTime? @default(now()) @db.Timestamp(6)
+  users_profile_blacklist_blacklisted_by_user_idTousers   users?    @relation("profile_blacklist_blacklisted_by_user_idTousers", fields: [blacklisted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles                                                profiles  @relation(fields: [profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_profile_blacklist_unblacklisted_by_user_idTousers users?    @relation("profile_blacklist_unblacklisted_by_user_idTousers", fields: [unblacklisted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([is_active], map: "idx_profile_blacklist_is_active")
+  @@index([profile_id], map: "idx_profile_blacklist_profile_id")
+}
+
+model project_financials {
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_id             String    @unique @db.Uuid
+  contract_value         Decimal?  @db.Decimal
+  revised_contract_value Decimal?  @db.Decimal
+  variation_order_value  Decimal?  @default(0) @db.Decimal
+  actual_cost_incurred   Decimal?  @default(0) @db.Decimal
+  misc_cost              Decimal?  @default(0) @db.Decimal
+  budget                 Decimal?  @db.Decimal
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+  projects               projects  @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_project_financials_project_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model project_matched_profiles {
+  id                String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_id        String           @db.Uuid
+  profile_id        String           @db.Uuid
+  skill_category_id String           @db.Uuid
+  shared_at         DateTime?        @db.Timestamp(6)
+  shared_by_user_id String?          @db.Uuid
+  status            String           @default("matched") @db.VarChar(50)
+  created_at        DateTime         @default(now()) @db.Timestamp(6)
+  updated_at        DateTime         @default(now()) @db.Timestamp(6)
+  profiles          profiles         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects          projects         @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users?           @relation(fields: [shared_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  skill_categories  skill_categories @relation(fields: [skill_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([project_id, profile_id, skill_category_id])
+  @@index([profile_id], map: "idx_project_matched_profiles_profile")
+  @@index([project_id], map: "idx_project_matched_profiles_project")
+  @@index([skill_category_id], map: "idx_project_matched_profiles_skill")
+  @@index([status], map: "idx_project_matched_profiles_status")
+}
+
+model qualification_types {
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String           @unique @db.VarChar
+  description    String?
+  is_active      Boolean?         @default(true)
+  qualifications qualifications[]
+}
+
+model project_request_requirements {
+  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_request_id String           @db.Uuid
+  skill_category_id  String           @db.Uuid
+  required_count     Int              @default(0)
+  notes              String?
+  created_at         DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
+  project_requests   project_requests @relation(fields: [project_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  skill_categories   skill_categories @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model project_assignments {
+  deployment_date     DateTime  @db.Date
+  expected_end_date   DateTime? @db.Date
+  actual_end_date     DateTime? @db.Date
+  status              String?   @default("allocated") @db.VarChar(50)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  id                  String    @id(map: "project_deployments_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_id          String?   @db.Uuid
+  profile_id          String?   @db.Uuid
+  assigned_by_user_id String?   @db.Uuid
+  users               users?    @relation(fields: [assigned_by_user_id], references: [id], onUpdate: NoAction)
+  profiles            profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "project_deployments_profile_id_fkey")
+  projects            projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "project_deployments_project_id_fkey")
+
+  @@index([profile_id, status], map: "idx_project_deployments_profile_status")
+  @@index([project_id, status], map: "idx_project_deployments_project_status")
+  @@index([status], map: "idx_project_deployments_status")
+}
