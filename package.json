@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
-    "build": "tsc && tsc-alias && npm run copy:prisma",
+    "build": "tsc && tsc-alias && npm run copy:prisma && npm run postbuild",
     "copy:prisma": "mkdir -p dist/generated && cp -r src/generated/prisma dist/generated/",
+    "postbuild": "node scripts/fix-imports.js",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "db:setup": "ts-node -r tsconfig-paths/register src/scripts/setupDatabase.ts",
