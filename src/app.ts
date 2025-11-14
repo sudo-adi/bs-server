@@ -73,8 +73,15 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Unhandled rejection handler
-process.on('unhandledRejection', (reason: Error, promise: Promise<any>) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('Unhandled Rejection:', {
+    error: reason instanceof Error ? {
+      message: reason.message,
+      stack: reason.stack,
+      ...(reason as any),
+    } : reason,
+    promiseType: promise.constructor.name,
+  });
   // In production, you might want to exit the process
   // process.exit(1);
 });

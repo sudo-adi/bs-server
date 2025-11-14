@@ -2,7 +2,12 @@ import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
 import { Decimal } from '@/generated/prisma/runtime/library';
 import { AppError } from '@/middlewares/errorHandler';
-import { PROJECT_STATUSES, ProjectMatchedProfileStatus, ProjectStatus } from '@/types/enums';
+import {
+  PROJECT_STATUSES,
+  ProjectMatchedProfileStatus,
+  ProjectStatus,
+  mapProjectMatchedProfileStatusToProfileStage,
+} from '@/types/enums';
 import type { CreateProjectDto, ProjectWithDetails, UpdateProjectDto } from '@/types/prisma.types';
 
 export class ProjectService {
@@ -544,7 +549,7 @@ export class ProjectService {
 
   /**
    * Save matched profiles for a project
-   * Only uses status enum: matched, shared, onboarded
+   * Status: matched → Profile stage: ALLOCATED
    */
   async saveMatchedProfiles(
     projectId: string,
@@ -562,30 +567,60 @@ export class ProjectService {
       throw new AppError('Project not found', 404);
     }
 
-    // Use upsert to handle duplicates
-    await Promise.all(
-      matchedProfiles.map((profile) =>
-        prisma.project_matched_profiles.upsert({
-          where: {
-            project_id_profile_id_skill_category_id: {
+    // Use transaction to create matched profiles and update profile stages
+    await prisma.$transaction(async (tx) => {
+      // Upsert matched profiles
+      await Promise.all(
+        matchedProfiles.map((profile) =>
+          tx.project_matched_profiles.upsert({
+            where: {
+              project_id_profile_id_skill_category_id: {
+                project_id: projectId,
+                profile_id: profile.profile_id,
+                skill_category_id: profile.skill_category_id,
+              },
+            },
+            create: {
               project_id: projectId,
               profile_id: profile.profile_id,
               skill_category_id: profile.skill_category_id,
+              status: ProjectMatchedProfileStatus.MATCHED,
             },
-          },
-          create: {
-            project_id: projectId,
-            profile_id: profile.profile_id,
-            skill_category_id: profile.skill_category_id,
-            status: ProjectMatchedProfileStatus.MATCHED,
-          },
-          update: {
-            status: ProjectMatchedProfileStatus.MATCHED,
-            updated_at: new Date(),
-          },
-        })
-      )
-    );
+            update: {
+              status: ProjectMatchedProfileStatus.MATCHED,
+              updated_at: new Date(),
+            },
+          })
+        )
+      );
+
+      // Create stage transitions for all matched profiles
+      // MATCHED status → ALLOCATED stage
+      const newStage = mapProjectMatchedProfileStatusToProfileStage(ProjectMatchedProfileStatus.MATCHED);
+
+      if (newStage) {
+        await Promise.all(
+          matchedProfiles.map(async (profile) => {
+            // Get current stage from stage_transitions
+            const latestTransition = await tx.stage_transitions.findFirst({
+              where: { profile_id: profile.profile_id },
+              orderBy: { transitioned_at: 'desc' },
+              select: { to_stage: true },
+            });
+
+            // Create stage transition to ALLOCATED
+            await tx.stage_transitions.create({
+              data: {
+                profile_id: profile.profile_id,
+                from_stage: latestTransition?.to_stage || null,
+                to_stage: newStage,
+                notes: `Matched to project: ${project.name}`,
+              },
+            });
+          })
+        );
+      }
+    });
 
     return {
       project_id: projectId,
@@ -596,6 +631,8 @@ export class ProjectService {
   /**
    * Share matched profiles with employer
    * Changes status from 'matched' to 'shared'
+   * Changes project status to 'allocated'
+   * Status: shared → Profile stage: ONBOARDED
    */
   async shareMatchedProfilesWithEmployer(projectId: string, userId?: string): Promise<any> {
     // Verify project exists
@@ -607,17 +644,70 @@ export class ProjectService {
       throw new AppError('Project not found', 404);
     }
 
-    // Update all matched profiles to shared status
-    const result = await prisma.project_matched_profiles.updateMany({
-      where: {
-        project_id: projectId,
-        status: ProjectMatchedProfileStatus.MATCHED,
-      },
-      data: {
-        status: ProjectMatchedProfileStatus.SHARED,
-        shared_at: new Date(),
-        shared_by_user_id: userId,
-      },
+    // Use transaction to update matched profiles and create stage transitions
+    const result = await prisma.$transaction(async (tx) => {
+      // Get all matched profiles before updating
+      const matchedProfiles = await tx.project_matched_profiles.findMany({
+        where: {
+          project_id: projectId,
+          status: ProjectMatchedProfileStatus.MATCHED,
+        },
+        select: {
+          profile_id: true,
+        },
+      });
+
+      // Update all matched profiles to shared status
+      const updateResult = await tx.project_matched_profiles.updateMany({
+        where: {
+          project_id: projectId,
+          status: ProjectMatchedProfileStatus.MATCHED,
+        },
+        data: {
+          status: ProjectMatchedProfileStatus.SHARED,
+          shared_at: new Date(),
+          shared_by_user_id: userId,
+        },
+      });
+
+      // Update project status to allocated
+      await tx.projects.update({
+        where: { id: projectId },
+        data: {
+          status: ProjectStatus.ALLOCATED,
+          updated_at: new Date(),
+        },
+      });
+
+      // Create stage transitions for all shared profiles
+      // SHARED status → ONBOARDED stage
+      const newStage = mapProjectMatchedProfileStatusToProfileStage(ProjectMatchedProfileStatus.SHARED);
+
+      if (newStage && matchedProfiles.length > 0) {
+        await Promise.all(
+          matchedProfiles.map(async (matchedProfile) => {
+            // Get current stage from stage_transitions
+            const latestTransition = await tx.stage_transitions.findFirst({
+              where: { profile_id: matchedProfile.profile_id },
+              orderBy: { transitioned_at: 'desc' },
+              select: { to_stage: true },
+            });
+
+            // Create stage transition to ONBOARDED
+            await tx.stage_transitions.create({
+              data: {
+                profile_id: matchedProfile.profile_id,
+                from_stage: latestTransition?.to_stage || null,
+                to_stage: newStage,
+                transitioned_by_user_id: userId,
+                notes: `Details shared with employer for project: ${project.name}`,
+              },
+            });
+          })
+        );
+      }
+
+      return updateResult;
     });
 
     return {
@@ -629,15 +719,13 @@ export class ProjectService {
 
   /**
    * Get shared profiles for a project (for employer view)
-   * Only returns profiles with status = 'shared' or 'onboarded'
+   * Only returns profiles with status = 'shared'
    */
   async getSharedProfiles(projectId: string): Promise<any> {
     const sharedProfiles = await prisma.project_matched_profiles.findMany({
       where: {
         project_id: projectId,
-        status: {
-          in: [ProjectMatchedProfileStatus.SHARED, ProjectMatchedProfileStatus.ONBOARDED],
-        },
+        status: ProjectMatchedProfileStatus.SHARED,
       },
       include: {
         profiles: {
@@ -700,6 +788,8 @@ export class ProjectService {
 
   /**
    * Mark matched profile as onboarded
+   * This removes the matched profile record since onboarding status is tracked in profile stage
+   * and actual assignment is tracked in project_assignments table
    */
   async onboardMatchedProfile(
     projectId: string,
@@ -727,7 +817,10 @@ export class ProjectService {
       );
     }
 
-    const updated = await prisma.project_matched_profiles.update({
+    // Delete the matched profile record since they're now being onboarded
+    // The actual onboarding status is tracked in the profile's stage
+    // and project assignment will be created in project_assignments table
+    await prisma.project_matched_profiles.delete({
       where: {
         project_id_profile_id_skill_category_id: {
           project_id: projectId,
@@ -735,12 +828,12 @@ export class ProjectService {
           skill_category_id: skillCategoryId,
         },
       },
-      data: {
-        status: ProjectMatchedProfileStatus.ONBOARDED,
-      },
     });
 
-    return updated;
+    return {
+      success: true,
+      message: 'Matched profile removed. Profile is now ready for project assignment.'
+    };
   }
 
   /**

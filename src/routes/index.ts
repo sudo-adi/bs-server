@@ -11,6 +11,10 @@ import authRoutes from './auth/auth.routes';
 import candidateAuthRoutes from './auth/candidateAuth.routes';
 import employerAuthRoutes from './auth/employerAuth.routes';
 
+// Candidate routes
+import candidateAuthenticationRoutes from './candidate/candidateAuth.routes';
+import candidatePortalRoutes from './candidate/candidatePortal.routes';
+
 // Profile routes
 import profileRoutes from './profiles';
 
@@ -24,8 +28,10 @@ import batchEnrollmentRoutes from './training/batchEnrollment.routes';
 import trainingBatchRoutes from './training/trainingBatch.routes';
 
 // Employer routes
-import employeeRegistrationRoutes from './employers/employeeRegistration.routes';
 import employerRoutes from './employers';
+import employeePortalRoutes from './employers/employeePortal.routes';
+import employeeRegistrationRoutes from './employers/employeeRegistration.routes';
+import employerDashboardRoutes from './employers/employerDashboard.routes';
 
 // Utility routes
 import healthRoutes from './utilities/health.routes';
@@ -44,8 +50,15 @@ router.use('/auth', authRoutes);
 router.use('/auth/candidate', candidateAuthRoutes);
 router.use('/auth/employer', employerAuthRoutes);
 
+// Candidate routes
+router.use('/candidate/auth', candidateAuthenticationRoutes);
+router.use('/candidate/portal', candidatePortalRoutes);
+
 // Employee registration (public)
 router.use('/employee', employeeRegistrationRoutes);
+
+// Worker portal (authentication required)
+router.use('/worker', employeePortalRoutes);
 
 // API routes
 router.use('/users', userRoutes);
@@ -54,6 +67,7 @@ router.use('/role-permissions', rolePermissionRoutes);
 router.use('/profiles', profileRoutes);
 router.use('/skill-categories', skillCategoryRoutes);
 router.use('/employers', employerRoutes);
+router.use('/employer-dashboard', employerDashboardRoutes);
 router.use('/project-requests', projectRequestRoutes);
 router.use('/training-batches', trainingBatchRoutes);
 router.use('/batch-enrollments', batchEnrollmentRoutes);

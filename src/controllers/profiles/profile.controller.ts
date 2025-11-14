@@ -23,7 +23,7 @@ export const createProfile = catchAsync(async (req: Request, res: Response) => {
   logger.info('📤 [BACKEND] Response sent to client');
 });
 
-export const getProfile = async (req: Request, res: Response) => {
+export const getProfile = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const includeDetails = req.query.details === 'true';
   const profile = await profileService.getProfileById(id, includeDetails);
@@ -40,9 +40,9 @@ export const getProfile = async (req: Request, res: Response) => {
     success: true,
     data: profile,
   });
-};
+});
 
-export const getAllProfiles = async (req: Request, res: Response) => {
+export const getAllProfiles = catchAsync(async (req: Request, res: Response) => {
   const filters = {
     stage: req.query.stage as string | undefined,
     skill_category_id: req.query.skill_category_id as string | undefined,
@@ -62,9 +62,9 @@ export const getAllProfiles = async (req: Request, res: Response) => {
     limit: filters.limit,
     offset: filters.offset,
   });
-};
+});
 
-export const updateProfile = async (req: Request, res: Response) => {
+export const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const profile = await profileService.updateProfile(id, req.body);
 
@@ -73,7 +73,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     message: 'Profile updated successfully',
     data: profile,
   });
-};
+});
 
 export const checkMobileNumber = catchAsync(async (req: Request, res: Response) => {
   const mobileNumber = req.query.mobile as string;
@@ -98,7 +98,7 @@ export const checkMobileNumber = catchAsync(async (req: Request, res: Response) 
   });
 });
 
-export const deleteProfile = async (req: Request, res: Response) => {
+export const deleteProfile = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   await profileService.deleteProfile(id);
 
@@ -106,10 +106,10 @@ export const deleteProfile = async (req: Request, res: Response) => {
     success: true,
     message: 'Profile deleted successfully',
   });
-};
+});
 
 // === Stage Management ===
-export const changeStage = async (req: Request, res: Response) => {
+export const changeStage = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const profile = await profileService.changeStage(id, req.body);
 
@@ -118,4 +118,4 @@ export const changeStage = async (req: Request, res: Response) => {
     message: 'Stage changed successfully',
     data: profile,
   });
-};
+});

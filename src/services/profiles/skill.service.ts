@@ -121,6 +121,8 @@ export class SkillService {
     // Build update data object
     const updateData: any = {};
 
+    if (data.skill_category_id !== undefined)
+      updateData.skill_category_id = data.skill_category_id;
     if (data.years_of_experience !== undefined)
       updateData.years_of_experience = data.years_of_experience;
     if (data.is_primary !== undefined) updateData.is_primary = data.is_primary;

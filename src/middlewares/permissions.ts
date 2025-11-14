@@ -11,6 +11,10 @@ declare global {
         username: string;
         email: string;
         role_id?: string;
+        // Worker portal fields
+        profileId?: string;
+        phone?: string;
+        type?: string;
       };
     }
   }

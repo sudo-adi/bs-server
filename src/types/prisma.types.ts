@@ -379,11 +379,13 @@ export interface UpdateBatchEnrollmentDto {
 }
 
 export interface BatchEnrollmentWithDetails extends batch_enrollments {
-  profiles?: profiles & {
-    profile_skills?: (profile_skills & {
-      skill_categories?: skill_categories | null;
-    })[];
-  } | null;
+  profiles?:
+    | (profiles & {
+        profile_skills?: (profile_skills & {
+          skill_categories?: skill_categories | null;
+        })[];
+      })
+    | null;
   training_batches?: training_batches | null;
   primary_skill_category_id?: string; // Virtual field
   primary_skill_category_name?: string; // Virtual field
@@ -786,3 +788,19 @@ export interface UpdateProjectRequestRequirementDto {
   required_count?: number;
   notes?: string;
 }
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  image_url?: string;
+  category?: string;
+  created_by_user_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateBlogPostDto extends Omit<BlogPost, 'id' | 'created_at' | 'updated_at'> {}
+
+export interface UpdateBlogPostDto
+  extends Partial<Omit<BlogPost, 'id' | 'created_by_user_id' | 'created_at' | 'updated_at'>> {}

@@ -10,7 +10,19 @@ import { Request, Response } from 'express';
  * Requires verification and approval before they can login
  */
 export const registerEmployee = catchAsync(async (req: Request, res: Response) => {
-  const { phone, full_name, fathers_name, village, district, state, postal_code } = req.body;
+  // Accept both 'phone' and 'mobile_number' field names for compatibility
+  const {
+    phone: phoneField,
+    mobile_number,
+    full_name,
+    fathers_name,
+    village,
+    district,
+    state,
+    postal_code,
+  } = req.body;
+
+  const phone = phoneField || mobile_number;
 
   // Validate required fields
   if (!phone || !full_name) {

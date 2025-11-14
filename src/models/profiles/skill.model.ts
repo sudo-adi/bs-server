@@ -31,6 +31,7 @@ export interface CreateProfileSkillDto {
 }
 
 export interface UpdateProfileSkillDto {
+  skill_category_id?: string;
   years_of_experience?: number;
   is_primary?: boolean;
 }

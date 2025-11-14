@@ -3,17 +3,15 @@
 
 // Profile Stage Enum
 export enum ProfileStage {
-  NEW_REGISTRATION = 'new registration',
-  NEW_JOINEE = 'new_joinee',
+  NEW_REGISTRATION = 'new_registration',
   SCREENING = 'screening',
   INTERVIEWED = 'interviewed',
   APPROVED = 'approved',
   REJECTED = 'rejected',
   TRAINING = 'training', // Legacy value
-  IN_TRAINING = 'in_training',
   TRAINED = 'trained',
-  ONBOARDED = 'onboarded',
   ALLOCATED = 'allocated',
+  ONBOARDED = 'onboarded',
   DEPLOYED = 'deployed',
   BENCHED = 'benched',
 }
@@ -45,7 +43,6 @@ export const PROJECT_ASSIGNMENT_STATUSES = Object.values(ProjectAssignmentStatus
 export enum ProjectMatchedProfileStatus {
   MATCHED = 'matched',
   SHARED = 'shared',
-  ONBOARDED = 'onboarded',
 }
 
 export const PROJECT_MATCHED_PROFILE_STATUSES = Object.values(ProjectMatchedProfileStatus);
@@ -55,6 +52,7 @@ export enum ProjectStatus {
   PLANNING = 'planning',
   APPROVED = 'approved',
   ACTIVE = 'active',
+  ALLOCATED = 'allocated',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
 }
@@ -97,25 +95,18 @@ export function isValidEnumValue<T extends string>(value: string, enumValues: T[
 // Stage transition rules
 export const STAGE_TRANSITION_RULES: Record<string, ProfileStage[]> = {
   [ProfileStage.NEW_REGISTRATION]: [
-    ProfileStage.NEW_JOINEE,
     ProfileStage.SCREENING,
     ProfileStage.REJECTED,
   ],
-  [ProfileStage.NEW_JOINEE]: [ProfileStage.SCREENING, ProfileStage.REJECTED],
   [ProfileStage.SCREENING]: [
     ProfileStage.INTERVIEWED,
     ProfileStage.APPROVED,
     ProfileStage.REJECTED,
   ],
   [ProfileStage.INTERVIEWED]: [ProfileStage.APPROVED, ProfileStage.REJECTED],
-  [ProfileStage.APPROVED]: [
-    ProfileStage.TRAINING,
-    ProfileStage.IN_TRAINING,
-    ProfileStage.ONBOARDED,
-  ],
+  [ProfileStage.APPROVED]: [ProfileStage.TRAINING, ProfileStage.ONBOARDED],
   [ProfileStage.REJECTED]: [], // Terminal state
   [ProfileStage.TRAINING]: [ProfileStage.TRAINED, ProfileStage.REJECTED], // Legacy
-  [ProfileStage.IN_TRAINING]: [ProfileStage.TRAINED, ProfileStage.REJECTED],
   [ProfileStage.TRAINED]: [ProfileStage.ONBOARDED],
   [ProfileStage.ONBOARDED]: [ProfileStage.ALLOCATED],
   [ProfileStage.ALLOCATED]: [ProfileStage.DEPLOYED, ProfileStage.BENCHED],
@@ -136,12 +127,26 @@ export function mapBatchEnrollmentStatusToProfileStage(
   switch (enrollmentStatus) {
     case BatchEnrollmentStatus.ENROLLED:
     case BatchEnrollmentStatus.IN_PROGRESS:
-      return ProfileStage.IN_TRAINING;
+      return ProfileStage.TRAINING;
     case BatchEnrollmentStatus.COMPLETED:
       return ProfileStage.TRAINED;
     case BatchEnrollmentStatus.DROPPED:
     case BatchEnrollmentStatus.FAILED:
       return null; // Don't auto-update stage for failed/dropped
+    default:
+      return null;
+  }
+}
+
+// Map project matched profile status to profile stage
+export function mapProjectMatchedProfileStatusToProfileStage(
+  matchedStatus: ProjectMatchedProfileStatus
+): ProfileStage | null {
+  switch (matchedStatus) {
+    case ProjectMatchedProfileStatus.MATCHED:
+      return ProfileStage.ALLOCATED;
+    case ProjectMatchedProfileStatus.SHARED:
+      return ProfileStage.ONBOARDED;
     default:
       return null;
   }
