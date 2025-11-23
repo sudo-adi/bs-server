@@ -5,7 +5,6 @@
 export enum ProfileStage {
   NEW_REGISTRATION = 'new_registration',
   SCREENING = 'screening',
-  INTERVIEWED = 'interviewed',
   APPROVED = 'approved',
   REJECTED = 'rejected',
   TRAINING = 'training', // Legacy value
@@ -13,6 +12,7 @@ export enum ProfileStage {
   ALLOCATED = 'allocated',
   ONBOARDED = 'onboarded',
   DEPLOYED = 'deployed',
+  ON_HOLD = 'on_hold',
   BENCHED = 'benched',
 }
 
@@ -51,13 +51,26 @@ export const PROJECT_MATCHED_PROFILE_STATUSES = Object.values(ProjectMatchedProf
 export enum ProjectStatus {
   PLANNING = 'planning',
   APPROVED = 'approved',
-  ACTIVE = 'active',
-  ALLOCATED = 'allocated',
+  WORKERS_SHARED = 'workers_shared',
+  ONGOING = 'ongoing',
+  REQUIREMENT_NOT_FULFILLED = 'requirement_not_fulfilled',
+  ON_HOLD = 'on_hold',
   COMPLETED = 'completed',
+  SHORT_CLOSED = 'short_closed',
+  TERMINATED = 'terminated',
   CANCELLED = 'cancelled',
 }
 
 export const PROJECT_STATUSES = Object.values(ProjectStatus);
+
+// Project Hold Attributable To Enum
+export enum ProjectHoldAttributableTo {
+  EMPLOYER = 'employer',
+  BUILDSEWA = 'buildsewa',
+  FORCE_MAJEURE = 'force_majeure',
+}
+
+export const PROJECT_HOLD_ATTRIBUTABLE_TO_VALUES = Object.values(ProjectHoldAttributableTo);
 
 // Project Request Status Enum
 export enum ProjectRequestStatus {
@@ -94,30 +107,73 @@ export function isValidEnumValue<T extends string>(value: string, enumValues: T[
 
 // Stage transition rules
 export const STAGE_TRANSITION_RULES: Record<string, ProfileStage[]> = {
-  [ProfileStage.NEW_REGISTRATION]: [
-    ProfileStage.SCREENING,
-    ProfileStage.REJECTED,
-  ],
-  [ProfileStage.SCREENING]: [
-    ProfileStage.INTERVIEWED,
-    ProfileStage.APPROVED,
-    ProfileStage.REJECTED,
-  ],
-  [ProfileStage.INTERVIEWED]: [ProfileStage.APPROVED, ProfileStage.REJECTED],
+  [ProfileStage.NEW_REGISTRATION]: [ProfileStage.SCREENING, ProfileStage.REJECTED],
+  [ProfileStage.SCREENING]: [ProfileStage.APPROVED, ProfileStage.REJECTED],
   [ProfileStage.APPROVED]: [ProfileStage.TRAINING, ProfileStage.ONBOARDED],
   [ProfileStage.REJECTED]: [], // Terminal state
   [ProfileStage.TRAINING]: [ProfileStage.TRAINED, ProfileStage.REJECTED], // Legacy
   [ProfileStage.TRAINED]: [ProfileStage.ONBOARDED],
   [ProfileStage.ONBOARDED]: [ProfileStage.ALLOCATED],
   [ProfileStage.ALLOCATED]: [ProfileStage.DEPLOYED, ProfileStage.BENCHED],
-  [ProfileStage.DEPLOYED]: [ProfileStage.BENCHED, ProfileStage.ALLOCATED],
+  [ProfileStage.DEPLOYED]: [ProfileStage.BENCHED, ProfileStage.ALLOCATED, ProfileStage.ON_HOLD],
+  [ProfileStage.ON_HOLD]: [ProfileStage.DEPLOYED, ProfileStage.BENCHED, ProfileStage.TRAINING],
   [ProfileStage.BENCHED]: [ProfileStage.ALLOCATED, ProfileStage.DEPLOYED],
+};
+
+// Project Status transition rules
+export const PROJECT_STATUS_TRANSITION_RULES: Record<string, ProjectStatus[]> = {
+  [ProjectStatus.PLANNING]: [ProjectStatus.APPROVED, ProjectStatus.CANCELLED],
+  [ProjectStatus.APPROVED]: [
+    ProjectStatus.WORKERS_SHARED,
+    ProjectStatus.REQUIREMENT_NOT_FULFILLED,
+    ProjectStatus.CANCELLED,
+  ],
+  [ProjectStatus.WORKERS_SHARED]: [ProjectStatus.ONGOING, ProjectStatus.CANCELLED],
+  [ProjectStatus.REQUIREMENT_NOT_FULFILLED]: [
+    ProjectStatus.WORKERS_SHARED,
+    ProjectStatus.CANCELLED,
+  ],
+  [ProjectStatus.ONGOING]: [
+    ProjectStatus.ON_HOLD,
+    ProjectStatus.COMPLETED,
+    ProjectStatus.SHORT_CLOSED,
+    ProjectStatus.TERMINATED,
+  ],
+  [ProjectStatus.ON_HOLD]: [ProjectStatus.ONGOING, ProjectStatus.TERMINATED],
+  [ProjectStatus.COMPLETED]: [], // Terminal state
+  [ProjectStatus.SHORT_CLOSED]: [], // Terminal state
+  [ProjectStatus.TERMINATED]: [], // Terminal state
+  [ProjectStatus.CANCELLED]: [], // Terminal state
 };
 
 // Helper function to validate stage transitions
 export function isValidStageTransition(fromStage: ProfileStage, toStage: ProfileStage): boolean {
   const allowedTransitions = STAGE_TRANSITION_RULES[fromStage] || [];
   return allowedTransitions.includes(toStage);
+}
+
+// Helper function to validate project status transitions
+export function isValidProjectStatusTransition(
+  fromStatus: ProjectStatus,
+  toStatus: ProjectStatus
+): boolean {
+  const allowedTransitions = PROJECT_STATUS_TRANSITION_RULES[fromStatus] || [];
+  return allowedTransitions.includes(toStatus);
+}
+
+// Helper function to check if status requires documents
+export function projectStatusRequiresDocuments(status: ProjectStatus): boolean {
+  return [
+    ProjectStatus.ON_HOLD,
+    ProjectStatus.COMPLETED,
+    ProjectStatus.SHORT_CLOSED,
+    ProjectStatus.TERMINATED,
+  ].includes(status);
+}
+
+// Helper function to check if status requires attributable_to field
+export function projectStatusRequiresAttributable(status: ProjectStatus): boolean {
+  return status === ProjectStatus.ON_HOLD;
 }
 
 // Map batch enrollment status to profile stage

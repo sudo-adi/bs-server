@@ -1,5 +1,5 @@
+import { rolePermissionService } from '@/services/admin';
 import { NextFunction, Request, Response } from 'express';
-import { rolePermissionService } from '../services/admin/rolePermission.service';
 import { ModuleName, RolePermission } from '../types/role.types';
 
 // Extend Express Request to include user

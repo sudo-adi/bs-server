@@ -1,4 +1,4 @@
-import skillService from '@/services/profiles/skill.service';
+import skillService from '@/services/profiles/skill/skill.service';
 import { Request, Response } from 'express';
 
 export const getAllSkillCategories = async (req: Request, res: Response) => {

@@ -46,11 +46,20 @@ export const registerEmployee = catchAsync(async (req: Request, res: Response) =
   const first_name = nameParts[0];
   const last_name = nameParts.slice(1).join(' ') || nameParts[0];
 
-  // Generate profile code (format: EMP-YYYYMMDD-XXXX)
-  const today = new Date();
-  const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  const candidate_code = `EMP-${dateStr}-${randomNum}`;
+  // Generate candidate code (format: BSC-00001)
+  const lastProfile = await prisma.profiles.findFirst({
+    where: { candidate_code: { startsWith: 'BSC-' } },
+    orderBy: { candidate_code: 'desc' },
+    select: { candidate_code: true },
+  });
+
+  let nextCode = 1;
+  if (lastProfile?.candidate_code) {
+    const match = lastProfile.candidate_code.match(/BSC-(\d+)/);
+    if (match) nextCode = parseInt(match[1]) + 1;
+  }
+
+  const candidate_code = `BSC-${String(nextCode).padStart(5, '0')}`;
 
   // Create profile
   const profile = await prisma.profiles.create({

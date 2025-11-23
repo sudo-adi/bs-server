@@ -1,4 +1,4 @@
-import scraperWebsiteService from '@/services/utilities/scraperWebsite.service';
+import { scraperWebsiteService } from '@/services/utilities';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

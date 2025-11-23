@@ -1,4 +1,4 @@
-import qualificationService from '@/services/profiles/qualification.service';
+import qualificationService from '@/services/profiles/qualification/qualification.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

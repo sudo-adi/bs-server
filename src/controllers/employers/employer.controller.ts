@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Request, Response } from 'express';
-import employerService from '@/services/employers/employer.service';
+import { employerService } from '@/services/employers';
 import catchAsync from '@/utils/catchAsync';
+import { Request, Response } from 'express';
 
 // Admin: Create employer
 export const createEmployer = catchAsync(async (req: Request, res: Response) => {
@@ -31,7 +31,8 @@ export const getAllEmployers = catchAsync(async (req: Request, res: Response) =>
   const result = await employerService.getAllEmployers(filters);
 
   // Remove passwords from all employers
-  const employersWithoutPasswords = result.employers.map(({ password_hash, ...emp }) => emp);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const employersWithoutPasswords = result.employers.map(({ password_hash, ...emp }: any) => emp);
 
   res.status(200).json({
     success: true,

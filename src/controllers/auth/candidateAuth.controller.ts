@@ -1,4 +1,4 @@
-import profileService from '@/services/profiles/profile.service';
+import profileService from '@/services/profiles/profile/profile.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

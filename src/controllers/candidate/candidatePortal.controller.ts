@@ -1,6 +1,6 @@
+import { candidatePortalService } from '@/services/candidate';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
-import candidatePortalService from '../../services/candidate/candidatePortal.service';
 
 /**
  * Get candidate's matched projects

@@ -1,4 +1,4 @@
-import projectAssignmentService from '@/services/projects/projectAssignment.service';
+import { projectAssignmentService } from '@/services/projects';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

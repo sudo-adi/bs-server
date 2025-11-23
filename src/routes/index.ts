@@ -40,6 +40,9 @@ import scraperWebsiteRoutes from './utilities/scraperWebsite.routes';
 import socialMediaRoutes from './utilities/socialMedia.routes';
 import socialMediaPostRoutes from './utilities/socialMediaPost.routes';
 
+// Worker Details routes
+import workerDetailsRoutes from './workerDetails';
+
 const router = Router();
 
 // Health routes (no prefix needed - handled at app level)
@@ -77,5 +80,6 @@ router.use('/news-updates', newsUpdateRoutes);
 router.use('/scraper-websites', scraperWebsiteRoutes);
 router.use('/social-media', socialMediaRoutes);
 router.use('/social-media-posts', socialMediaPostRoutes);
+router.use('/workerdetails', workerDetailsRoutes);
 
 export default router;

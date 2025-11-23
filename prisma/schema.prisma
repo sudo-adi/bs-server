@@ -218,6 +218,12 @@ model profiles {
   id                                       String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   deleted_at                               DateTime?                  @db.Timestamp(6)
   deleted_by_user_id                       String?                    @db.Uuid
+  previous_stage                           String?                    @db.VarChar(50)
+  esic_number                              String?                    @db.VarChar(17)
+  uan_number                               String?                    @db.VarChar(12)
+  pf_account_number                        String?                    @db.VarChar(100)
+  pan_number                               String?                    @db.VarChar(10)
+  health_insurance_policy_number           String?                    @db.VarChar(100)
   addresses                                addresses[]
   bank_accounts                            bank_accounts[]
   batch_enrollments                        batch_enrollments[]
@@ -225,11 +231,16 @@ model profiles {
   interactions                             interactions[]
   profile_blacklist                        profile_blacklist[]
   profile_skills                           profile_skills[]
+  profile_salary_slips                     profile_salary_slips[]
   users_profiles_deleted_by_user_idTousers users?                     @relation("profiles_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_assignments                      project_assignments[]
   project_matched_profiles                 project_matched_profiles[]
   qualifications                           qualifications[]
   stage_transitions                        stage_transitions[]
+
+  @@index([esic_number], map: "idx_profiles_esic")
+  @@index([uan_number], map: "idx_profiles_uan")
+  @@index([pan_number], map: "idx_profiles_pan")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -295,11 +306,18 @@ model projects {
   created_by_user_id                       String?                         @db.Uuid
   deleted_at                               DateTime?                       @db.Timestamp(6)
   deleted_by_user_id                       String?                         @db.Uuid
+  status_changed_at                        DateTime?                       @db.Timestamp(6)
+  status_change_reason                     String?
+  actual_start_date                        DateTime?                       @db.Date
+  actual_end_date                          DateTime?                       @db.Date
+  current_attributable_to                  String?                         @db.VarChar(50)
   project_assignments                      project_assignments[]
   project_financials                       project_financials?
   project_matched_profiles                 project_matched_profiles[]
   project_requests                         project_requests[]
   project_resource_requirements            project_resource_requirements[]
+  project_status_documents                 project_status_documents[]
+  project_status_history                   project_status_history[]
   employers                                employers?                      @relation(fields: [employer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projects_employers")
   users_projects_created_by_user_idTousers users?                          @relation("projects_created_by_user_idTousers", fields: [created_by_user_id], references: [id], onUpdate: NoAction)
   users_projects_deleted_by_user_idTousers users?                          @relation("projects_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -347,7 +365,6 @@ model skill_categories {
   project_matched_profiles      project_matched_profiles[]
   project_request_requirements  project_request_requirements[]
   project_resource_requirements project_resource_requirements[]
-  training_batches              training_batches[]
 }
 
 model social_media_platform_posts {
@@ -436,10 +453,8 @@ model training_batches {
   updated_at         DateTime?           @default(now()) @db.Timestamp(6)
   id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   created_by_user_id String?             @db.Uuid
-  skill_category_id  String?             @db.Uuid
   batch_enrollments  batch_enrollments[]
   users              users?              @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
-  skill_categories   skill_categories?   @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model users {
@@ -470,6 +485,8 @@ model users {
   project_assignments                                                 project_assignments[]
   project_matched_profiles                                            project_matched_profiles[]
   project_requests                                                    project_requests[]
+  project_status_documents                                            project_status_documents[]
+  project_status_history                                              project_status_history[]
   projects_projects_created_by_user_idTousers                         projects[]                 @relation("projects_created_by_user_idTousers")
   projects_projects_deleted_by_user_idTousers                         projects[]                 @relation("projects_deleted_by_user_idTousers")
   qualifications                                                      qualifications[]
@@ -653,4 +670,65 @@ model blogs {
   category           String?  @db.VarChar
   created_by_user_id String?  @db.Uuid
   users              users?   @relation(fields: [created_by_user_id], references: [id], onDelete: Cascade)
+}
+
+model project_status_documents {
+  id                        String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_status_history_id String                 @db.Uuid
+  project_id                String                 @db.Uuid
+  status                    String                 @db.VarChar(50)
+  document_title            String                 @db.VarChar(500)
+  file_url                  String                 @db.VarChar(1000)
+  uploaded_by_user_id       String?                @db.Uuid
+  created_at                DateTime?              @default(now()) @db.Timestamp(6)
+  projects                  projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  project_status_history    project_status_history @relation(fields: [project_status_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                     users?                 @relation(fields: [uploaded_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([project_status_history_id], map: "idx_project_status_documents_history")
+  @@index([project_id], map: "idx_project_status_documents_project")
+  @@index([status], map: "idx_project_status_documents_status")
+}
+
+model project_status_history {
+  id                       String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  project_id               String                     @db.Uuid
+  from_status              String?                    @db.VarChar(50)
+  to_status                String                     @db.VarChar(50)
+  change_reason            String?
+  attributable_to          String?                    @db.VarChar(50)
+  status_date              DateTime                   @db.Timestamp(6)
+  changed_by_user_id       String?                    @db.Uuid
+  created_at               DateTime?                  @default(now()) @db.Timestamp(6)
+  project_status_documents project_status_documents[]
+  users                    users?                     @relation(fields: [changed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projects                 projects                   @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([project_id, created_at(sort: Desc)], map: "idx_project_status_history_project_date")
+  @@index([to_status], map: "idx_project_status_history_status")
+}
+
+model profile_salary_slips {
+  id                  Int       @id @default(autoincrement())
+  profile_id          String    @db.Uuid
+  salary_month        Int
+  salary_year         Int
+  slip_document_url   String?   @db.VarChar(1000)
+  slip_file_name      String?   @db.VarChar(255)
+  payment_date        DateTime? @db.Date
+  payment_status      String?   @default("pending") @db.VarChar(50)
+  payment_reference   String?   @db.VarChar(200)
+  payment_mode        String?   @db.VarChar(50)
+  notes               String?
+  uploaded_by_user_id String?   @db.Uuid
+  approved_by_user_id String?   @db.Uuid
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  profiles            profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([profile_id, salary_month, salary_year], map: "uq_profile_salary_month")
+  @@index([profile_id], map: "idx_salary_slips_profile")
+  @@index([salary_year, salary_month], map: "idx_salary_slips_period")
+  @@index([payment_status], map: "idx_salary_slips_status")
+  @@index([profile_id, salary_year, salary_month], map: "idx_salary_slips_profile_period")
 }

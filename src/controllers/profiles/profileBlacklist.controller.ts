@@ -1,4 +1,4 @@
-import profileBlacklistService from '@/services/profiles/profileBlacklist.service';
+import profileBlacklistService from '@/services/profiles/profileBlacklist/profileBlacklist.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

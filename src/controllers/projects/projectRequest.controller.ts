@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import projectRequestService from '@/services/projects/projectRequest.service';
+import { projectRequestService } from '@/services/projects';
 import catchAsync from '@/utils/catchAsync';
+import { Request, Response } from 'express';
 
 // Create employer project requirement
 export const createRequirement = catchAsync(async (req: Request, res: Response) => {

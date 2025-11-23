@@ -1,4 +1,4 @@
-import interactionService from '@/services/profiles/interaction.service';
+import interactionService from '@/services/profiles/interaction/interaction.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

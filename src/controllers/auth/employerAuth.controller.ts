@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import employerService from '@/services/employers/employer.service';
+import { employerService } from '@/services/employers';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

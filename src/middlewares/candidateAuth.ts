@@ -1,5 +1,5 @@
 import { AppError } from '@/middlewares/errorHandler';
-import candidateAuthService from '@/services/candidate/candidateAuth.service';
+import { candidateAuthService } from '@/services/candidate';
 import { NextFunction, Request, Response } from 'express';
 
 /**

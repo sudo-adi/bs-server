@@ -1,4 +1,4 @@
-import skillService from '@/services/profiles/skill.service';
+import skillService from '@/services/profiles/skill/skill.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

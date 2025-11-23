@@ -1,4 +1,4 @@
-import roleService from '@/services/admin/role.service';
+import { roleService } from '@/services/admin';
 import { Request, Response } from 'express';
 
 // Get all roles

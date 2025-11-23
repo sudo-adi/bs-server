@@ -1,4 +1,4 @@
-import bankAccountService from '@/services/profiles/bankAccount.service';
+import bankAccountService from '@/services/profiles/bankAccount/bankAccount.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

@@ -1,4 +1,4 @@
-import employerDashboardService from '@/services/employers/employerDashboard.service';
+import { employerDashboardService } from '@/services/employers';
 import { Request, Response } from 'express';
 
 /**

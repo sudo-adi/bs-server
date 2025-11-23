@@ -1,6 +1,6 @@
 import { env } from '@/config/env';
 import logger from '@/config/logger';
-import socialMediaPostService from '@/services/utilities/socialMediaPost.service';
+import { socialMediaPostService } from '@/services/utilities';
 import { uploadFile } from '@/utils/fileStorage';
 import axios from 'axios';
 import { Request, Response } from 'express';
@@ -71,11 +71,7 @@ export const createSocialMediaPost = async (req: Request, res: Response) => {
     if (req.file) {
       try {
         logger.info('Uploading image to local storage...');
-        imageUrl = await uploadFile(
-          req.file.buffer,
-          req.file.originalname,
-          req.file.mimetype
-        );
+        imageUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype);
         logger.info(`Image uploaded successfully: ${imageUrl}`);
       } catch (uploadError: any) {
         logger.error('Image upload failed:', uploadError);

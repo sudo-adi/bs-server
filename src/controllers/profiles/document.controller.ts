@@ -1,4 +1,4 @@
-import documentService from '@/services/profiles/document.service';
+import documentService from '@/services/profiles/document/document.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

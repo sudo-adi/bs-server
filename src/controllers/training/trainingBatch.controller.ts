@@ -1,4 +1,4 @@
-import trainingBatchService from '@/services/training/trainingBatch.service';
+import trainingBatchService from '@/services/training/trainingBatch/trainingBatch.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

@@ -1,5 +1,5 @@
+import { rolePermissionService } from '@/services/admin';
 import { NextFunction, Request, Response } from 'express';
-import { rolePermissionService } from '../../services/admin/rolePermission.service';
 import { CreateRoleInput, UpdateRoleInput } from '../../types/role.types';
 
 export class RolePermissionController {

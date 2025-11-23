@@ -24,7 +24,22 @@
       "Bash(find:*)",
       "Bash(cat:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run approve-candidate:*)"
+      "Bash(npm run approve-candidate:*)",
+      "Bash(for:*)",
+      "Bash(done)",
+      "Bash(mkdir:*)",
+      "Bash(echo:*)",
+      "Bash(while read file)",
+      "Bash(do basename \"$file\" done)",
+      "Bash(rm:*)",
+      "Bash(xargs:*)",
+      "Bash(/tmp/newss-scraper-original.ts)",
+      "Bash(/tmp/newsupdate-original.ts)",
+      "Bash(/tmp/socialMediaPost-original.ts)",
+      "Bash(npx tsx:*)",
+      "Bash(psql:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []

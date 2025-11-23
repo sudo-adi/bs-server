@@ -1,6 +1,6 @@
 import * as cron from 'node-cron';
 import logger from '@/config/logger';
-import scraperService from '@/services/utilities/newss-scraper.service';
+import scraperService from '@/services/utilities/newsScraper/newsScraper.service';
 import { env } from '@/config/env';
 
 class ScraperCron {

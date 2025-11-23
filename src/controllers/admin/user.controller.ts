@@ -1,4 +1,4 @@
-import userService from '@/services/admin/user.service';
+import { userService } from '@/services/admin';
 import { Request, Response } from 'express';
 
 export const createUser = async (req: Request, res: Response) => {

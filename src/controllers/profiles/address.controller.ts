@@ -1,4 +1,4 @@
-import addressService from '@/services/profiles/address.service';
+import addressService from '@/services/profiles/address/address.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

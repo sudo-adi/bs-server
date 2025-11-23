@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import projectResourceRequirementService from '@/services/projects/projectResourceRequirement.service';
+import { projectResourceRequirementService } from '@/services/projects';
 import catchAsync from '@/utils/catchAsync';
+import { Request, Response } from 'express';
 
 // Create project skill requirement
 export const createRequirement = catchAsync(async (req: Request, res: Response) => {
@@ -83,7 +83,10 @@ export const getRequirementById = catchAsync(async (req: Request, res: Response)
   const id = parseInt(req.params.id);
   const includeDetails = req.query.include_details === 'true';
 
-  const requirement = await projectResourceRequirementService.getRequirementById(id, includeDetails);
+  const requirement = await projectResourceRequirementService.getRequirementById(
+    id,
+    includeDetails
+  );
 
   res.status(200).json({
     success: true,

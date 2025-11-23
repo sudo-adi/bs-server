@@ -1,6 +1,6 @@
 import scraperCron from '@/jobs/scraperCron';
 import { NewsUpdateFilters, PaginationParams } from '@/models/utilities/newsUpdate.model';
-import newsUpdateService from '@/services/utilities/newsupdate.service';
+import { newsUpdateService } from '@/services/utilities';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

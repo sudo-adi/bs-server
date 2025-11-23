@@ -1,6 +1,6 @@
+import { candidateAuthService } from '@/services/candidate';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
-import candidateAuthService from '../../services/candidate/candidateAuth.service';
 
 /**
  * Send OTP to candidate's mobile number

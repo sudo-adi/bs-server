@@ -1,4 +1,4 @@
-import employerAuthorizedPersonService from '@/services/employers/employerAuthorizedPerson.service';
+import { employerAuthorizedPersonService } from '@/services/employers';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

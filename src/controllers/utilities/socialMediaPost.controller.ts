@@ -1,5 +1,5 @@
 import { PaginationParams, SocialMediaPostFilters } from '@/models/utilities/socialMediaPost.model';
-import socialMediaPostService from '@/services/utilities/socialMediaPost.service';
+import { socialMediaPostService } from '@/services/utilities';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 

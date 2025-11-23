@@ -1,4 +1,4 @@
-import csvImportService from '@/services/profiles/csvImport.service';
+import csvImportService from '@/services/profiles/csvImport/csvImport.service';
 import type { ImportOptions } from '@/types/csvImport.types';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';

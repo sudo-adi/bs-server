@@ -1,4 +1,4 @@
-import batchEnrollmentService from '@/services/training/batchEnrollment.service';
+import batchEnrollmentService from '@/services/training/batchEnrollment/batchEnrollment.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 
