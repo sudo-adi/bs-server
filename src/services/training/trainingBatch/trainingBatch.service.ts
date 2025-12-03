@@ -1,8 +1,12 @@
-import { TrainingBatch, TrainingBatchWithEnrollments } from '@/models/training/trainingBatch.model';
-import { CreateTrainingBatchDto, UpdateTrainingBatchDto } from '@/models/training/trainingBatch.model';
+import {
+  CreateTrainingBatchDto,
+  TrainingBatch,
+  TrainingBatchWithEnrollments,
+  UpdateTrainingBatchDto,
+} from '@/types';
 import { TrainingBatchCreateOperation } from './operations/training-batch-create.operation';
-import { TrainingBatchUpdateOperation } from './operations/training-batch-update.operation';
 import { TrainingBatchDeleteOperation } from './operations/training-batch-delete.operation';
+import { TrainingBatchUpdateOperation } from './operations/training-batch-update.operation';
 import { TrainingBatchBaseQuery } from './queries/batch-base-query';
 
 export class TrainingBatchService {
@@ -20,7 +24,10 @@ export class TrainingBatchService {
     return query.getAllBatches(filters);
   }
 
-  async getBatchById(id: string, includeEnrollments?: boolean): Promise<TrainingBatchWithEnrollments> {
+  async getBatchById(
+    id: string,
+    includeEnrollments?: boolean
+  ): Promise<TrainingBatchWithEnrollments> {
     const query = new TrainingBatchBaseQuery();
     return query.getBatchById(id, includeEnrollments);
   }

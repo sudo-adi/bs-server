@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import type { Prisma } from '@/generated/prisma';
 import { ProjectStatus } from '@/types/enums';
-import type { ProjectWithDetails } from '@/types/prisma.types';
+import type { ProjectWithDetails } from '@/types';
 
 export class ProjectApproveOperation {
   static async approve(

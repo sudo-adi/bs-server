@@ -52,8 +52,28 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     // Attach user info to request based on type
     if (decoded.type === 'employer') {
       req.employerId = decoded.employerId;
+      // Set req.user for employers
+      if (decoded.employerId) {
+        req.user = {
+          id: decoded.employerId.toString(),
+          username: decoded.username || '',
+          email: decoded.email || '',
+          type: 'employer',
+        };
+      }
     } else if (decoded.type === 'candidate') {
       req.profileId = decoded.profileId;
+      // Set req.user for candidates
+      if (decoded.profileId) {
+        req.user = {
+          id: decoded.profileId.toString(),
+          username: decoded.username || '',
+          email: decoded.email || '',
+          phone: decoded.mobile_number || '',
+          type: 'candidate',
+          profileId: decoded.profileId.toString(),
+        };
+      }
     } else {
       req.userId = decoded.userId;
       // Also set req.user for permission middleware

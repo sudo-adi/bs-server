@@ -1,15 +1,8 @@
 import prisma from '@/config/prisma';
-import { AppError } from '@/middlewares/errorHandler';
-import {
-  BatchEnrollment,
-  UpdateBatchEnrollmentDto,
-} from '@/models/training/batchEnrollment.model';
 import { Prisma } from '@/generated/prisma';
-import {
-  BatchEnrollmentStatus,
-  BATCH_ENROLLMENT_STATUSES,
-  mapBatchEnrollmentStatusToProfileStage,
-} from '@/types/enums';
+import { AppError } from '@/middlewares/errorHandler';
+import { BatchEnrollment, UpdateBatchEnrollmentDto } from '@/types';
+import { BATCH_ENROLLMENT_STATUSES, BatchEnrollmentStatus } from '@/types/enums';
 
 export class BatchEnrollmentUpdateOperation {
   static async update(id: string, data: UpdateBatchEnrollmentDto): Promise<BatchEnrollment> {
@@ -39,26 +32,32 @@ export class BatchEnrollmentUpdateOperation {
           data,
         });
 
-        if (data.status && data.status !== currentEnrollment.status && enrollment.profile_id) {
-          const newStage = mapBatchEnrollmentStatusToProfileStage(data.status as BatchEnrollmentStatus);
+        // NOTE: Stage transitions are now handled by batch-level status updates only
+        // Individual enrollment status changes should not directly update worker stages
+        // This prevents conflicts when batch completion triggers stage transitions
 
-          if (newStage) {
-            const latestTransition = await tx.stage_transitions.findFirst({
-              where: { profile_id: enrollment.profile_id },
-              orderBy: { transitioned_at: 'desc' },
-              select: { to_stage: true },
-            });
+        // if (data.status && data.status !== currentEnrollment.status && enrollment.profile_id) {
+        //   const newStage = mapBatchEnrollmentStatusToProfileStage(
+        //     data.status as BatchEnrollmentStatus
+        //   );
 
-            await tx.stage_transitions.create({
-              data: {
-                profile_id: enrollment.profile_id,
-                from_stage: latestTransition?.to_stage || null,
-                to_stage: newStage,
-                notes: `Batch enrollment status changed to: ${data.status}`,
-              },
-            });
-          }
-        }
+        //   if (newStage) {
+        //     const latestTransition = await tx.stage_transitions.findFirst({
+        //       where: { profile_id: enrollment.profile_id },
+        //       orderBy: { transitioned_at: 'desc' },
+        //       select: { to_stage: true },
+        //     });
+
+        //     await tx.stage_transitions.create({
+        //       data: {
+        //         profile_id: enrollment.profile_id,
+        //         from_stage: latestTransition?.to_stage || null,
+        //         to_stage: newStage,
+        //         notes: `Batch enrollment status changed to: ${data.status}`,
+        //       },
+        //     });
+        //   }
+        // }
 
         return enrollment;
       });

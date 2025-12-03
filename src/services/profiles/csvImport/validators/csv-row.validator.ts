@@ -1,7 +1,7 @@
-import type { ProfileCsvRow, ValidationError } from '@/types/csvImport.types';
+import type { ProfileCsvRow, ValidationError } from '@/types';
 
 export class CsvRowValidator {
-  static validate(row: ProfileCsvRow, rowNumber: number): ValidationError[] {
+  static validate(row: ProfileCsvRow): ValidationError[] {
     const errors: ValidationError[] = [];
 
     // Required fields
@@ -55,6 +55,39 @@ export class CsvRowValidator {
         field: 'bank_account',
         message: 'IFSC code and account holder name are required when account number is provided',
       });
+    }
+
+    // Validate ESIC number format if provided
+    if (row.esic_number && row.esic_number.trim() !== '') {
+      const esicRegex = /^[0-9]{17}$/;
+      if (!esicRegex.test(row.esic_number.replace(/[\s\-]/g, ''))) {
+        errors.push({
+          field: 'esic_number',
+          message: 'ESIC number must be 17 digits',
+        });
+      }
+    }
+
+    // Validate UAN number format if provided
+    if (row.uan_number && row.uan_number.trim() !== '') {
+      const uanRegex = /^[0-9]{12}$/;
+      if (!uanRegex.test(row.uan_number.replace(/[\s\-]/g, ''))) {
+        errors.push({
+          field: 'uan_number',
+          message: 'UAN number must be 12 digits',
+        });
+      }
+    }
+
+    // Validate PAN number format if provided
+    if (row.pan_number && row.pan_number.trim() !== '') {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(row.pan_number.toUpperCase())) {
+        errors.push({
+          field: 'pan_number',
+          message: 'PAN number must be in format: ABCDE1234F',
+        });
+      }
     }
 
     return errors;

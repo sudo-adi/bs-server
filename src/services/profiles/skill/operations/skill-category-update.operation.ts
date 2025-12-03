@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { SkillCategory, UpdateSkillCategoryDto } from '@/models/profiles/skill.model';
+import type { SkillCategory, UpdateSkillCategoryDto } from '@/types';
 
 export class SkillCategoryUpdateOperation {
   static async update(id: string, data: UpdateSkillCategoryDto): Promise<SkillCategory> {

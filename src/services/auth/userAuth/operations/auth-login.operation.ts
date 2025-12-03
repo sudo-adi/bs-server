@@ -1,6 +1,6 @@
 import { env } from '@/config/env';
 import { AppError } from '@/middlewares/errorHandler';
-import { UserResponse } from '@/models/admin/user.model';
+import { UserResponse } from '@/types';
 import { userService } from '@/services/admin';
 import jwt from 'jsonwebtoken';
 

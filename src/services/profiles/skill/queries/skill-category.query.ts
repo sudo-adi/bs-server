@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { SkillCategory } from '@/models/profiles/skill.model';
+import type { SkillCategory } from '@/types';
 
 export class SkillCategoryQuery {
   static async getAllSkillCategories(activeOnly = false): Promise<SkillCategory[]> {

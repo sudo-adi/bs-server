@@ -1,9 +1,9 @@
 import type {
-  Qualification,
   CreateQualificationDto,
+  Qualification,
   UpdateQualificationDto,
   VerifyQualificationDto,
-} from '@/models/profiles/qualification.model';
+} from '@/types';
 import { QualificationCreateOperation } from './operations/qualification-create.operation';
 import { QualificationDeleteOperation } from './operations/qualification-delete.operation';
 import { QualificationUpdateOperation } from './operations/qualification-update.operation';

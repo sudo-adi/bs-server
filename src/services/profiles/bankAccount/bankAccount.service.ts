@@ -3,7 +3,7 @@ import type {
   CreateBankAccountDto,
   UpdateBankAccountDto,
   VerifyBankAccountDto,
-} from '@/models/profiles/bankAccount.model';
+} from '@/types';
 import { BankAccountCreateOperation } from './operations/bankAccount-create.operation';
 import { BankAccountDeleteOperation } from './operations/bankAccount-delete.operation';
 import { BankAccountUpdateOperation } from './operations/bankAccount-update.operation';

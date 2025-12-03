@@ -40,12 +40,12 @@ export enum ProjectAssignmentStatus {
 export const PROJECT_ASSIGNMENT_STATUSES = Object.values(ProjectAssignmentStatus);
 
 // Project Matched Profile Status Enum
-export enum ProjectMatchedProfileStatus {
+export enum ProjectWorkerAssignmentStatus {
   MATCHED = 'matched',
   SHARED = 'shared',
 }
 
-export const PROJECT_MATCHED_PROFILE_STATUSES = Object.values(ProjectMatchedProfileStatus);
+export const PROJECT_MATCHED_PROFILE_STATUSES = Object.values(ProjectWorkerAssignmentStatus);
 
 // Project Status Enum
 export enum ProjectStatus {
@@ -107,7 +107,7 @@ export function isValidEnumValue<T extends string>(value: string, enumValues: T[
 
 // Stage transition rules
 export const STAGE_TRANSITION_RULES: Record<string, ProfileStage[]> = {
-  [ProfileStage.NEW_REGISTRATION]: [ProfileStage.SCREENING, ProfileStage.REJECTED],
+  [ProfileStage.NEW_REGISTRATION]: [ProfileStage.SCREENING, ProfileStage.APPROVED, ProfileStage.REJECTED],
   [ProfileStage.SCREENING]: [ProfileStage.APPROVED, ProfileStage.REJECTED],
   [ProfileStage.APPROVED]: [ProfileStage.TRAINING, ProfileStage.ONBOARDED],
   [ProfileStage.REJECTED]: [], // Terminal state
@@ -195,13 +195,13 @@ export function mapBatchEnrollmentStatusToProfileStage(
 }
 
 // Map project matched profile status to profile stage
-export function mapProjectMatchedProfileStatusToProfileStage(
-  matchedStatus: ProjectMatchedProfileStatus
+export function mapProjectWorkerAssignmentStatusToProfileStage(
+  matchedStatus: ProjectWorkerAssignmentStatus
 ): ProfileStage | null {
   switch (matchedStatus) {
-    case ProjectMatchedProfileStatus.MATCHED:
+    case ProjectWorkerAssignmentStatus.MATCHED:
       return ProfileStage.ALLOCATED;
-    case ProjectMatchedProfileStatus.SHARED:
+    case ProjectWorkerAssignmentStatus.SHARED:
       return ProfileStage.ONBOARDED;
     default:
       return null;

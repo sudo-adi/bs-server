@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { employer_authorized_persons } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { UpdateEmployerAuthorizedPersonDto } from '@/models/employers/employer.model';
+import { UpdateEmployerAuthorizedPersonDto } from '@/types';
 
 export class AuthorizedPersonUpdateOperation {
   static async update(

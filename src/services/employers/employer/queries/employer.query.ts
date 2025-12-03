@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { Employer } from '@/models/employers/employer.model';
+import { Employer } from '@/types';
 
 export class EmployerQuery {
   /**

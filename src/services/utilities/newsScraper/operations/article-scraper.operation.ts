@@ -1,5 +1,5 @@
 import logger from '@/config/logger';
-import { ScrapedArticle } from '@/models/utilities/newsUpdate.model';
+import { ScrapedArticle } from '@/types';
 import axios from 'axios';
 
 export class ArticleScraperOperation {

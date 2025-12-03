@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import {
   BatchEnrollmentWithDetails,
-} from '@/models/training/batchEnrollment.model';
+} from '@/types';
 import { Prisma } from '@/generated/prisma';
 import {
   BatchEnrollmentStatus,
@@ -56,7 +56,18 @@ export class BatchEnrollmentQuery {
                   },
                 },
               },
-              training_batches: true,
+              training_batches: {
+                include: {
+                  trainers: {
+                    select: {
+                      id: true,
+                      name: true,
+                      employee_code: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
             }
           : undefined,
         orderBy: { enrollment_date: 'desc' },
@@ -98,7 +109,18 @@ export class BatchEnrollmentQuery {
                 },
               },
             },
-            training_batches: true,
+            training_batches: {
+              include: {
+                trainers: {
+                  select: {
+                    id: true,
+                    name: true,
+                    employee_code: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
           }
         : undefined,
     });

@@ -8,13 +8,13 @@ export class PortalDashboardQuery {
   static async getDashboardSummary(profileId: string) {
     // Get counts
     const [matchedProjectsCount, trainingEnrollmentsCount, employmentCount] = await Promise.all([
-      prisma.project_matched_profiles.count({
+      prisma.project_worker_assignments.count({
         where: { profile_id: profileId },
       }),
       prisma.batch_enrollments.count({
         where: { profile_id: profileId },
       }),
-      prisma.project_assignments.count({
+      prisma.project_worker_assignments.count({
         where: { profile_id: profileId },
       }),
     ]);
@@ -29,7 +29,9 @@ export class PortalDashboardQuery {
       },
       include: {
         training_batches: {
-          include: {},
+          include: {
+            trainers: true,
+          },
         },
       },
       orderBy: {
@@ -38,10 +40,9 @@ export class PortalDashboardQuery {
     });
 
     // Get current employment
-    const currentEmployment = await prisma.project_assignments.findFirst({
+    const currentEmployment = await prisma.project_worker_assignments.findFirst({
       where: {
         profile_id: profileId,
-        status: 'deployed',
       },
       include: {
         projects: {
@@ -54,9 +55,7 @@ export class PortalDashboardQuery {
           },
         },
       },
-      orderBy: {
-        deployment_date: 'desc',
-      },
+      orderBy: {},
     });
 
     // Calculate days left for current training
@@ -78,7 +77,7 @@ export class PortalDashboardQuery {
         ? {
             batch_name: currentTraining.training_batches?.name,
             program_name: currentTraining.training_batches?.program_name,
-            trainer_name: currentTraining.training_batches?.trainer_name,
+            trainer_name: currentTraining.training_batches?.trainers?.name,
             start_date: currentTraining.training_batches?.start_date,
             end_date: currentTraining.training_batches?.end_date,
             days_left: trainingDaysLeft,
@@ -90,9 +89,8 @@ export class PortalDashboardQuery {
             project_name: currentEmployment.projects?.name,
             project_location: currentEmployment.projects?.location,
             employer_name: currentEmployment.projects?.employers?.company_name,
-            deployment_date: currentEmployment.deployment_date,
-            expected_end_date: currentEmployment.expected_end_date,
-            status: currentEmployment.status,
+            deployed_date: currentEmployment.deployed_date,
+            onboarded_date: currentEmployment.onboarded_date,
           }
         : null,
     };

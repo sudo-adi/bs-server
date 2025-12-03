@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { CreateUserDto, UserResponse } from '@/models/admin/user.model';
+import { CreateUserDto, UserResponse } from '@/types';
 import { PasswordHelper } from '../helpers/password.helper';
 
 export class UserCreateOperation {
@@ -26,7 +26,7 @@ export class UserCreateOperation {
         email: data.email,
         password_hash: passwordHash,
         full_name: data.full_name,
-        phone: data.phone_number,
+        phone: data.phone,
         role_id: data.role_id,
         is_active: data.is_active ?? true,
       },

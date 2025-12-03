@@ -1,7 +1,7 @@
+import { env } from '@/config/env';
 import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
-import { env } from '@/config/env';
 
 // Storage directory - can be configured via env
 const STORAGE_DIR = env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
@@ -18,18 +18,7 @@ async function ensureStorageDir(): Promise<void> {
   }
 }
 
-/**
- * Upload a file to local storage
- * @param file - The file buffer
- * @param filename - Original filename
- * @param mimetype - File MIME type
- * @returns Public URL of the uploaded file
- */
-export async function uploadFile(
-  file: Buffer,
-  filename: string,
-  mimetype: string
-): Promise<string> {
+export async function uploadFile(file: Buffer, filename: string): Promise<string> {
   try {
     await ensureStorageDir();
 
@@ -45,14 +34,12 @@ export async function uploadFile(
     const publicUrl = `${BASE_URL}/uploads/${uniqueFilename}`;
     return publicUrl;
   } catch (error) {
-    throw new Error(`File upload error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `File upload error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
-/**
- * Delete a file from local storage
- * @param fileUrl - Public URL of the file
- */
 export async function deleteFile(fileUrl: string): Promise<void> {
   try {
     // Extract filename from URL
@@ -63,15 +50,12 @@ export async function deleteFile(fileUrl: string): Promise<void> {
     // Delete file
     await fs.unlink(filePath);
   } catch (error) {
-    throw new Error(`File delete error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `File delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
-/**
- * Get file path from URL
- * @param fileUrl - Public URL of the file
- * @returns Local file path
- */
 export function getFilePathFromUrl(fileUrl: string): string {
   const url = new URL(fileUrl);
   const filename = path.basename(url.pathname);

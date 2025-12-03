@@ -1,33 +1,10 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { EmployerProjectRequirement } from '@/models/projects/projectRequest.model';
 import { ProjectRequestStatus } from '@/types/enums';
+import type { ProjectRequest } from '@/types/prisma.types';
 
 export class ProjectRequestReviewOperation {
-  static async markAsReviewed(
-    id: number,
-    reviewedByUserId: number
-  ): Promise<EmployerProjectRequirement> {
-    try {
-      const requirement = await prisma.project_requests.update({
-        where: { id: id.toString() },
-        data: {
-          status: ProjectRequestStatus.REVIEWED,
-          reviewed_by_user_id: reviewedByUserId.toString(),
-          reviewed_at: new Date(),
-        },
-      });
-
-      return requirement as any;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
-        throw new AppError('Employer project requirement not found', 404);
-      }
-      throw error;
-    }
-  }
-
-  static async approve(id: string, reviewedByUserId: string): Promise<EmployerProjectRequirement> {
+  static async markAsReviewed(id: string, reviewedByUserId: string): Promise<ProjectRequest> {
     try {
       const requirement = await prisma.project_requests.update({
         where: { id },
@@ -38,9 +15,29 @@ export class ProjectRequestReviewOperation {
         },
       });
 
-      return requirement as any;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+      return requirement;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+        throw new AppError('Employer project requirement not found', 404);
+      }
+      throw error;
+    }
+  }
+
+  static async approve(id: string, reviewedByUserId: string): Promise<ProjectRequest> {
+    try {
+      const requirement = await prisma.project_requests.update({
+        where: { id },
+        data: {
+          status: ProjectRequestStatus.REVIEWED,
+          reviewed_by_user_id: reviewedByUserId,
+          reviewed_at: new Date(),
+        },
+      });
+
+      return requirement;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         throw new AppError('Project request not found', 404);
       }
       throw error;
@@ -51,7 +48,7 @@ export class ProjectRequestReviewOperation {
     id: string,
     reviewedByUserId: string,
     rejectionReason?: string
-  ): Promise<EmployerProjectRequirement> {
+  ): Promise<ProjectRequest> {
     try {
       const currentRequest = await prisma.project_requests.findUnique({
         where: { id },
@@ -69,28 +66,28 @@ export class ProjectRequestReviewOperation {
         },
       });
 
-      return requirement as any;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+      return requirement;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         throw new AppError('Project request not found', 404);
       }
       throw error;
     }
   }
 
-  static async linkToProject(id: number, projectId: number): Promise<EmployerProjectRequirement> {
+  static async linkToProject(id: string, projectId: string): Promise<ProjectRequest> {
     try {
       const requirement = await prisma.project_requests.update({
-        where: { id: id.toString() },
+        where: { id },
         data: {
           status: ProjectRequestStatus.PROJECT_CREATED,
-          project_id: projectId.toString(),
+          project_id: projectId,
         },
       });
 
-      return requirement as any;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+      return requirement;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         throw new AppError('Employer project requirement not found', 404);
       }
       throw error;

@@ -11,8 +11,4 @@ router.put('/:id', roleController.updateRole);
 router.delete('/:id', roleController.deleteRole);
 router.get('/:id/users', roleController.getRoleUsers);
 
-// Permission routes
-router.post('/check-permission', roleController.checkPermission);
-router.get('/permissions/me', roleController.getUserPermissions);
-
 export default router;

@@ -1,5 +1,5 @@
 import { AppError } from '@/middlewares/errorHandler';
-import type { ProfileCsvRow } from '@/types/csvImport.types';
+import type { ProfileCsvRow } from '@/types';
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 

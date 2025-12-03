@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { employerService } from '@/services/employers';
+import { notifyUserCreated } from '@/services/notifications';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 
@@ -9,6 +10,19 @@ export const register = catchAsync(async (req: Request, res: Response) => {
 
   // Remove password from response
   const { password_hash, ...employerData } = employer;
+
+  // Send notification about new employer registration
+  try {
+    await notifyUserCreated({
+      userId: employer.id,
+      email: employer.email,
+      username: employer.company_name,
+      fullName: employer.company_name,
+    });
+  } catch (error) {
+    // Don't throw - notification failure shouldn't break registration
+    console.error('Failed to send employer registration notification:', error);
+  }
 
   res.status(201).json({
     success: true,

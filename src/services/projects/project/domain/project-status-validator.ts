@@ -4,7 +4,7 @@ import {
   projectStatusRequiresDocuments,
   ProjectStatus,
 } from '@/types/enums';
-import type { StatusTransitionValidation } from '@/types/project-status.types';
+import type { StatusTransitionValidation } from '@/types';
 import type { projects } from '@/generated/prisma';
 
 export class ProjectStatusValidator {

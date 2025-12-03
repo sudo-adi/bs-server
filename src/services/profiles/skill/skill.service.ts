@@ -6,16 +6,16 @@ import type {
   UpdateProfileSkillDto,
   UpdateSkillCategoryDto,
   VerifySkillDto,
-} from '@/models/profiles/skill.model';
-import { SkillCategoryQuery } from './queries/skill-category.query';
-import { ProfileSkillQuery } from './queries/profile-skill.query';
-import { SkillCategoryCreateOperation } from './operations/skill-category-create.operation';
-import { SkillCategoryUpdateOperation } from './operations/skill-category-update.operation';
-import { SkillCategoryDeleteOperation } from './operations/skill-category-delete.operation';
+} from '@/types';
 import { ProfileSkillCreateOperation } from './operations/profile-skill-create.operation';
+import { ProfileSkillDeleteOperation } from './operations/profile-skill-delete.operation';
 import { ProfileSkillUpdateOperation } from './operations/profile-skill-update.operation';
 import { ProfileSkillVerifyOperation } from './operations/profile-skill-verify.operation';
-import { ProfileSkillDeleteOperation } from './operations/profile-skill-delete.operation';
+import { SkillCategoryCreateOperation } from './operations/skill-category-create.operation';
+import { SkillCategoryDeleteOperation } from './operations/skill-category-delete.operation';
+import { SkillCategoryUpdateOperation } from './operations/skill-category-update.operation';
+import { ProfileSkillQuery } from './queries/profile-skill.query';
+import { SkillCategoryQuery } from './queries/skill-category.query';
 
 export class SkillService {
   async getAllSkillCategories(activeOnly = false): Promise<SkillCategory[]> {

@@ -6,7 +6,7 @@ export class PortalProjectsQuery {
    * Returns all projects where the candidate has been matched/shared
    */
   static async getMatchedProjects(profileId: string) {
-    const matchedProjects = await prisma.project_matched_profiles.findMany({
+    const matchedProjects = await prisma.project_worker_assignments.findMany({
       where: {
         profile_id: profileId,
       },
@@ -28,22 +28,23 @@ export class PortalProjectsQuery {
             description: true,
           },
         },
-        users: {
+        users_assigned_by: {
           select: {
             full_name: true,
           },
         },
       },
       orderBy: {
-        shared_at: 'desc',
+        created_at: 'desc',
       },
     });
 
     return matchedProjects.map((match) => ({
       id: match.id,
-      status: match.status,
-      shared_at: match.shared_at,
-      shared_by: match.users?.full_name || null,
+      created_at: match.created_at,
+      deployed_date: match.deployed_date,
+      onboarded_date: match.onboarded_date,
+      assigned_by: match.users_assigned_by?.full_name || null,
       skill_category: match.skill_categories?.name || null,
       project: {
         id: match.projects.id,

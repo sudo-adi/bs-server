@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { Document, CreateDocumentDto } from '@/models/profiles/document.model';
+import type { Document, CreateDocumentDto } from '@/types';
 import { VerificationStatus } from '@/types/enums';
 
 export class DocumentCreateOperation {

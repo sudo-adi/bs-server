@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { Document, UpdateDocumentDto } from '@/models/profiles/document.model';
+import type { Document, UpdateDocumentDto } from '@/types';
 import { VerificationStatus, VERIFICATION_STATUSES } from '@/types/enums';
 
 export class DocumentUpdateOperation {

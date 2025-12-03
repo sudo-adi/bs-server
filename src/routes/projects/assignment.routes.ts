@@ -1,17 +1,29 @@
 import { Router } from 'express';
-import * as assignmentController from '@/controllers/projects/projectAssignment.controller';
+import * as assignmentController from '@/controllers/projects/projectWorkerAssignment.controller';
 
 const router = Router();
 
+// ==================== Worker Assignment CRUD ====================
+
+// Create single assignment
 router.post('/', assignmentController.createAssignment);
-router.post('/bulk', assignmentController.bulkDeployProfiles); // CRITICAL: Bulk deploy
-router.post('/deploy-project', assignmentController.deployProjectToEmployer); // Deploy project to employer
+
+// Bulk create assignments
+router.post('/bulk', assignmentController.bulkCreateAssignments);
+
+// Bulk remove assignments
+router.post('/bulk-remove', assignmentController.bulkRemoveAssignments);
+
+// Validate assignment
+router.post('/validate', assignmentController.validateAssignment);
+
+// Get all assignments with filters
 router.get('/', assignmentController.getAllAssignments);
+
+// Get assignment by ID
 router.get('/:id', assignmentController.getAssignmentById);
-router.patch('/:id', assignmentController.updateAssignment);
-router.delete('/:id', assignmentController.deleteAssignment);
-router.post('/:id/activate', assignmentController.activateAssignment);
-router.post('/:id/complete', assignmentController.completeAssignment);
-router.post('/:id/cancel', assignmentController.cancelAssignment);
+
+// Remove assignment (soft delete)
+router.delete('/:id', assignmentController.removeAssignment);
 
 export default router;

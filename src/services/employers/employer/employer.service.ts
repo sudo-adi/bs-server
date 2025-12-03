@@ -5,7 +5,7 @@ import {
   RegisterEmployerDto,
   UpdateEmployerDto,
   VerifyEmployerDto,
-} from '@/models/employers/employer.model';
+} from '@/types';
 import { EmployerCreateOperation } from './operations/employer-create.operation';
 import { EmployerDeleteOperation } from './operations/employer-delete.operation';
 import { EmployerLoginOperation } from './operations/employer-login.operation';

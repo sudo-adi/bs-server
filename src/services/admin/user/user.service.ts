@@ -1,4 +1,4 @@
-import { CreateUserDto, UpdateUserDto, User, UserResponse } from '@/models/admin/user.model';
+import { CreateUserDto, UpdateUserDto, User, UserResponse } from '@/types';
 import { UserChangePasswordOperation } from './operations/user-change-password.operation';
 import { UserCreateOperation } from './operations/user-create.operation';
 import { UserDeleteOperation } from './operations/user-delete.operation';

@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { Employer, UpdateEmployerDto } from '@/models/employers/employer.model';
+import { Employer, UpdateEmployerDto } from '@/types';
 
 export class EmployerUpdateOperation {
   static async update(id: string, data: UpdateEmployerDto): Promise<Employer> {

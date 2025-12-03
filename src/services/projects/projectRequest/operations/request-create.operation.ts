@@ -1,17 +1,13 @@
 import prisma from '@/config/prisma';
-import {
-  CreateEmployerProjectRequirementDto,
-  EmployerProjectRequirement,
-} from '@/models/projects/projectRequest.model';
+import type { CreateProjectRequestDto } from '@/types';
 import { ProjectRequestStatus } from '@/types/enums';
+import type { ProjectRequest } from '@/types/prisma.types';
 
 export class ProjectRequestCreateOperation {
-  static async create(
-    data: CreateEmployerProjectRequirementDto
-  ): Promise<EmployerProjectRequirement> {
+  static async create(data: CreateProjectRequestDto): Promise<ProjectRequest> {
     const requirement = await prisma.project_requests.create({
       data: {
-        employer_id: data.employer_id.toString(),
+        employer_id: data.employer_id,
         project_title: data.project_title,
         project_description: data.project_description,
         location: data.location,
@@ -25,6 +21,6 @@ export class ProjectRequestCreateOperation {
       },
     });
 
-    return requirement as any;
+    return requirement;
   }
 }

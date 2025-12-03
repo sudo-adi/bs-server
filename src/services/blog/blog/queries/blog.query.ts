@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
-import { BlogFilters } from '@/types/blog.types';
+import { BlogFilters } from '@/types';
 
 export class BlogQuery {
   /**

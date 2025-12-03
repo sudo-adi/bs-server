@@ -1,5 +1,5 @@
-import winston from 'winston';
 import path from 'path';
+import winston from 'winston';
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 const nodeEnv = process.env.NODE_ENV || 'development';

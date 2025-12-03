@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import { PROJECT_STATUSES, ProjectStatus } from '@/types/enums';
-import type { ProjectWithDetails } from '@/types/prisma.types';
+import type { ProjectWithDetails } from '@/types';
 
 export class ProjectQuery {
   /**
@@ -54,9 +54,9 @@ export class ProjectQuery {
           project_resource_requirements: {
             include: { skill_categories: true },
           },
-          project_assignments: {
+          project_worker_assignments: {
             take: 5,
-            orderBy: { deployment_date: 'desc' },
+            orderBy: { created_at: 'desc' },
           },
           project_requests: true,
         },
@@ -84,9 +84,9 @@ export class ProjectQuery {
         project_resource_requirements: {
           include: { skill_categories: true },
         },
-        project_assignments: includeDetails
+        project_worker_assignments: includeDetails
           ? {
-              orderBy: { deployment_date: 'desc' },
+              orderBy: { created_at: 'desc' },
               include: { profiles: true },
             }
           : false,

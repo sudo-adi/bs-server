@@ -1,6 +1,6 @@
 import scraperCron from '@/jobs/scraperCron';
-import { NewsUpdateFilters, PaginationParams } from '@/models/utilities/newsUpdate.model';
 import { newsUpdateService } from '@/services/utilities';
+import { NewsUpdateFilters, PaginationParams } from '@/types';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 
@@ -13,7 +13,6 @@ export const getAllNewsUpdates = catchAsync(async (req: Request, res: Response) 
     max_value,
     start_date,
     end_date,
-    search,
     page,
     limit,
     sort_by,
@@ -27,14 +26,15 @@ export const getAllNewsUpdates = catchAsync(async (req: Request, res: Response) 
     max_value: max_value ? parseFloat(max_value as string) : undefined,
     start_date: start_date ? new Date(start_date as string) : undefined,
     end_date: end_date ? new Date(end_date as string) : undefined,
-    search: search as string,
+    sort_by: (sort_by as string) || 'created_at',
+    sort_order: (sort_order as 'asc' | 'desc') || 'desc',
+    limit: limit ? parseInt(limit as string) : 20,
+    offset: page ? (parseInt(page as string) - 1) * (limit ? parseInt(limit as string) : 20) : 0,
   };
 
   const pagination: PaginationParams = {
     page: page ? parseInt(page as string) : 1,
     limit: limit ? parseInt(limit as string) : 20,
-    sort_by: (sort_by as string) || 'created_at',
-    sort_order: (sort_order as 'asc' | 'desc') || 'desc',
   };
 
   const result = await newsUpdateService.getAll(filters, pagination);

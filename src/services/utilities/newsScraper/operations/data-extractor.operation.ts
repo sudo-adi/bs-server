@@ -1,6 +1,6 @@
 import { env } from '@/config/env';
 import logger from '@/config/logger';
-import { ExtractedProjectData, ScrapedArticle } from '@/models/utilities/newsUpdate.model';
+import { ExtractedProjectData, ScrapedArticle } from '@/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export class DataExtractorOperation {

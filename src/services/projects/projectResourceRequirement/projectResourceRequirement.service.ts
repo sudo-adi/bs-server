@@ -4,7 +4,7 @@ import {
   ProjectSkillRequirementWithDetails,
   SkillAllocationStatus,
   UpdateProjectSkillRequirementDto,
-} from '@/models/projects/projectResourceRequirement.model';
+} from '@/types';
 import { ResourceRequirementCreateOperation } from './operations/requirement-create.operation';
 import { ResourceRequirementDeleteOperation } from './operations/requirement-delete.operation';
 import { ResourceRequirementUpdateOperation } from './operations/requirement-update.operation';
@@ -12,8 +12,8 @@ import { ResourceRequirementQuery } from './queries/resource-requirement.query';
 
 export class ProjectResourceRequirementService {
   async getAllRequirements(filters?: {
-    project_id?: number;
-    skill_category_id?: number;
+    project_id?: string;
+    skill_category_id?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ requirements: ProjectSkillRequirement[]; total: number }> {
@@ -21,7 +21,7 @@ export class ProjectResourceRequirementService {
   }
 
   async getRequirementById(
-    id: number,
+    id: string,
     includeDetails = false
   ): Promise<ProjectSkillRequirementWithDetails> {
     return await ResourceRequirementQuery.getRequirementById(id, includeDetails);
@@ -34,13 +34,13 @@ export class ProjectResourceRequirementService {
   }
 
   async updateRequirement(
-    id: number,
+    id: string,
     data: UpdateProjectSkillRequirementDto
   ): Promise<ProjectSkillRequirement> {
     return await ResourceRequirementUpdateOperation.update(id, data);
   }
 
-  async deleteRequirement(id: number): Promise<void> {
+  async deleteRequirement(id: string): Promise<void> {
     return await ResourceRequirementDeleteOperation.delete(id);
   }
 

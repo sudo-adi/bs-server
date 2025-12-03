@@ -1,5 +1,5 @@
 import { AppError } from '@/middlewares/errorHandler';
-import type { ImportOptions, ImportResult, ImportRowResult } from '@/types/csvImport.types';
+import type { ImportOptions, ImportResult, ImportRowResult } from '@/types';
 import { ProfileImportOperation } from './operations/profile-import.operation';
 import { CsvParser } from './parsers/csv.parser';
 
@@ -51,10 +51,7 @@ export class CsvImportService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError(
-        error instanceof Error ? error.message : 'Failed to import CSV file',
-        400
-      );
+      throw new AppError(error instanceof Error ? error.message : 'Failed to import CSV file', 400);
     }
   }
 }

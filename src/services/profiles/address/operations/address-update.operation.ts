@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { Address, UpdateAddressDto } from '@/types/prisma.types';
+import type { Address, UpdateAddressDto } from '@/types';
 
 export class AddressUpdateOperation {
   static async update(id: string, data: UpdateAddressDto): Promise<Address> {

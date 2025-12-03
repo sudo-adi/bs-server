@@ -71,7 +71,7 @@ export const createSocialMediaPost = async (req: Request, res: Response) => {
     if (req.file) {
       try {
         logger.info('Uploading image to local storage...');
-        imageUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype);
+        imageUrl = await uploadFile(req.file.buffer, req.file.originalname);
         logger.info(`Image uploaded successfully: ${imageUrl}`);
       } catch (uploadError: any) {
         logger.error('Image upload failed:', uploadError);

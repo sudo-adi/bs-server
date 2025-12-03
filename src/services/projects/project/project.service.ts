@@ -1,25 +1,27 @@
-import type { CreateProjectDto, ProjectWithDetails, UpdateProjectDto } from '@/types/prisma.types';
-import type {
-  CompleteProjectDto,
-  HoldProjectDto,
-  ResumeProjectDto,
-  ShortCloseProjectDto,
-  StartProjectDto,
-  StatusTransitionRequestDto,
-  TerminateProjectDto,
-} from '@/dtos/project-status.dto';
-import type {
-  ProjectStatusHistoryWithDocuments,
-  ProjectStatusTransitionResult,
-} from '@/types/project-status.types';
+import prisma from '@/config/prisma';
+import type { CreateProjectDto, ProjectWithDetails, UpdateProjectDto } from '@/types';
+// COMMENTED OUT - Will implement project status transitions later
+// import type {
+//   CompleteProjectDto,
+//   HoldProjectDto,
+//   ResumeProjectDto,
+//   ShortCloseProjectDto,
+//   StartProjectDto,
+//   StatusTransitionRequestDto,
+//   TerminateProjectDto,
+// } from '@/dtos/project-status.dto';
+import type { ProjectStatusHistoryWithDocuments } from '@/types';
 import { ProjectApproveOperation } from './operations/project-approve.operation';
 import { ProjectCreateFromRequestOperation } from './operations/project-create-from-request.operation';
 import { ProjectCreateOperation } from './operations/project-create.operation';
 import { ProjectDeleteOperation } from './operations/project-delete.operation';
-import { ProjectMatchingOperation } from './operations/project-matching.operation';
-import { ProjectStatusTransitionOperation } from './operations/project-status-transition.operation';
 import { ProjectUpdateOperation } from './operations/project-update.operation';
-import { ProjectMatchingQuery } from './queries/project-matching.query';
+// COMMENTED OUT - Will implement project matching later with different approach
+// import { ProjectMatchingOperation } from './operations/project-matching.operation';
+// import { ProjectStatusTransitionOperation } from './operations/project-status-transition.operation';
+// import { ProjectMatchingQuery } from './queries/project-matching.query';
+import { ProjectAutoMatchHelpersOperation } from './operations/project-auto-match-helpers.operation';
+import { ProjectMatchableWorkersQuery } from './queries/project-matchable-workers.query';
 import { ProjectStatusDocumentQuery } from './queries/project-status-document.query';
 import { ProjectStatusHistoryQuery } from './queries/project-status-history.query';
 import { ProjectQuery } from './queries/project.query';
@@ -65,34 +67,219 @@ export class ProjectService {
   }
 
   async getMatchedProfiles(projectId: string): Promise<any> {
-    return await ProjectMatchingQuery.getMatchedProfiles(projectId);
+    // Get currently assigned workers to the project
+    const assignments = await prisma.project_worker_assignments.findMany({
+      where: {
+        project_id: projectId,
+        removed_at: null, // Only active assignments
+      },
+      include: {
+        profiles: {
+          include: {
+            profile_skills: {
+              include: {
+                skill_categories: true,
+              },
+            },
+          },
+        },
+        skill_categories: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    // Return array directly to match frontend expectations
+    return assignments.map((assignment) => ({
+      id: assignment.id,
+      profile_id: assignment.profile_id,
+      skill_category_id: assignment.skill_category_id,
+      assigned_by_user_id: assignment.assigned_by_user_id,
+      onboarded_date: assignment.onboarded_date,
+      deployed_date: assignment.deployed_date,
+      created_at: assignment.created_at,
+      profile: {
+        id: assignment.profiles.id,
+        candidate_code: assignment.profiles.candidate_code,
+        first_name: assignment.profiles.first_name,
+        middle_name: assignment.profiles.middle_name,
+        last_name: assignment.profiles.last_name,
+        phone: assignment.profiles.phone,
+        email: assignment.profiles.email,
+        current_stage: assignment.profiles.current_stage,
+        gender: assignment.profiles.gender,
+        date_of_birth: assignment.profiles.date_of_birth,
+        profile_photo_url: assignment.profiles.profile_photo_url,
+        skills: assignment.profiles.profile_skills,
+      },
+      skill_category: assignment.skill_categories,
+    }));
   }
 
   async saveMatchedProfiles(
     projectId: string,
     matchedProfiles: Array<{ profile_id: string; skill_category_id: string }>
   ): Promise<any> {
-    return await ProjectMatchingOperation.saveMatchedProfiles(projectId, matchedProfiles);
+    // Use upsert to handle duplicate assignments (unique constraint on project_id, profile_id, skill_category_id)
+    const assignments = await Promise.all(
+      matchedProfiles.map((match) =>
+        prisma.project_worker_assignments.upsert({
+          where: {
+            project_id_profile_id_skill_category_id: {
+              project_id: projectId,
+              profile_id: match.profile_id,
+              skill_category_id: match.skill_category_id,
+            },
+          },
+          update: {
+            updated_at: new Date(),
+          },
+          create: {
+            project_id: projectId,
+            profile_id: match.profile_id,
+            skill_category_id: match.skill_category_id,
+          },
+        })
+      )
+    );
+
+    return {
+      count: assignments.length,
+      assignments,
+    };
   }
 
-  async shareMatchedProfilesWithEmployer(projectId: string, userId?: string): Promise<any> {
-    return await ProjectMatchingOperation.shareMatchedProfiles(projectId, userId);
+  async shareMatchedProfilesWithEmployer(projectId: string): Promise<any> {
+    // Get the project to check its status
+    const project = await prisma.projects.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true, start_date: true },
+    });
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    // Get all matched profiles for this project that haven't been shared yet
+    const assignments = await prisma.project_worker_assignments.findMany({
+      where: {
+        project_id: projectId,
+        removed_at: null,
+        onboarded_date: null, // Only share profiles that haven't been onboarded yet
+      },
+      include: {
+        profiles: true,
+      },
+    });
+
+    if (assignments.length === 0) {
+      return {
+        message: 'No new profiles to share',
+        shared_count: 0,
+      };
+    }
+
+    const now = new Date();
+
+    // Determine worker stage based on project start date
+    // - If project.start_date <= current date → worker stage = 'onboarded'
+    // - If project.start_date > current date → worker stage = 'allocated'
+    const workerStage = project.start_date && project.start_date <= now ? 'onboarded' : 'allocated';
+
+    // Update all matched profiles to set onboarded_date and update worker stages
+    const updatePromises = assignments.map(async (assignment) => {
+      // Update the assignment with onboarded_date
+      const updatedAssignment = await prisma.project_worker_assignments.update({
+        where: { id: assignment.id },
+        data: {
+          onboarded_date: now,
+        },
+      });
+
+      // Update the worker's current_stage
+      await prisma.profiles.update({
+        where: { id: assignment.profile_id },
+        data: {
+          current_stage: workerStage,
+        },
+      });
+
+      return updatedAssignment;
+    });
+
+    await Promise.all(updatePromises);
+
+    // Update project status to 'workers_shared' if it's currently 'planning' or 'approved'
+    if (project.status === 'planning' || project.status === 'approved') {
+      await prisma.projects.update({
+        where: { id: projectId },
+        data: {
+          status: 'workers_shared',
+        },
+      });
+    }
+
+    return {
+      message: 'Profiles shared with employer successfully',
+      shared_count: assignments.length,
+      project_status: 'workers_shared',
+      worker_stage: workerStage,
+      profiles: assignments.map((a) => ({
+        profile_id: a.profile_id,
+        skill_category_id: a.skill_category_id,
+        name: `${a.profiles.first_name} ${a.profiles.last_name || ''}`.trim(),
+      })),
+    };
   }
 
   async getSharedProfiles(projectId: string): Promise<any> {
-    return await ProjectMatchingQuery.getSharedProfiles(projectId);
-  }
+    // Get profiles that have been shared with employer (onboarded_date is set)
+    const sharedAssignments = await prisma.project_worker_assignments.findMany({
+      where: {
+        project_id: projectId,
+        removed_at: null,
+        onboarded_date: { not: null }, // Only profiles that have been shared/onboarded
+      },
+      include: {
+        profiles: {
+          include: {
+            profile_skills: {
+              include: {
+                skill_categories: true,
+              },
+            },
+          },
+        },
+        skill_categories: true,
+      },
+      orderBy: {
+        onboarded_date: 'desc',
+      },
+    });
 
-  async onboardMatchedProfile(
-    projectId: string,
-    profileId: string,
-    skillCategoryId: string
-  ): Promise<any> {
-    return await ProjectMatchingOperation.onboardMatchedProfile(
-      projectId,
-      profileId,
-      skillCategoryId
-    );
+    return {
+      count: sharedAssignments.length,
+      profiles: sharedAssignments.map((assignment) => ({
+        id: assignment.id,
+        profile_id: assignment.profile_id,
+        skill_category_id: assignment.skill_category_id,
+        onboarded_date: assignment.onboarded_date,
+        deployed_date: assignment.deployed_date,
+        profile: {
+          id: assignment.profiles.id,
+          candidate_code: assignment.profiles.candidate_code,
+          first_name: assignment.profiles.first_name,
+          middle_name: assignment.profiles.middle_name,
+          last_name: assignment.profiles.last_name,
+          phone: assignment.profiles.phone,
+          email: assignment.profiles.email,
+          current_stage: assignment.profiles.current_stage,
+          skills: assignment.profiles.profile_skills,
+        },
+        skill_category: assignment.skill_categories,
+      })),
+    };
   }
 
   async createProjectFromRequest(
@@ -103,100 +290,6 @@ export class ProjectService {
   }
 
   // ==================== Project Status Lifecycle Methods ====================
-
-  /**
-   * Transition project status with validation and side effects
-   */
-  async transitionProjectStatus(
-    projectId: string,
-    data: StatusTransitionRequestDto
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.transitionStatus(projectId, data);
-  }
-
-  /**
-   * Put project on hold with documents and attributable party
-   */
-  async holdProject(
-    projectId: string,
-    data: HoldProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.holdProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
-
-  /**
-   * Resume project from on hold status
-   */
-  async resumeProject(
-    projectId: string,
-    data: ResumeProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.resumeProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
-
-  /**
-   * Start project (transition to ONGOING)
-   */
-  async startProject(
-    projectId: string,
-    data: StartProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.startProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
-
-  /**
-   * Complete project with documents
-   */
-  async completeProject(
-    projectId: string,
-    data: CompleteProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.completeProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
-
-  /**
-   * Short close project (early completion)
-   */
-  async shortCloseProject(
-    projectId: string,
-    data: ShortCloseProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.shortCloseProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
-
-  /**
-   * Terminate project with worker rollback
-   */
-  async terminateProject(
-    projectId: string,
-    data: TerminateProjectDto,
-    changedByUserId: string
-  ): Promise<ProjectStatusTransitionResult> {
-    return await ProjectStatusTransitionOperation.terminateProject(projectId, {
-      ...data,
-      changed_by_user_id: changedByUserId,
-    });
-  }
 
   /**
    * Get project status history
@@ -248,6 +341,53 @@ export class ProjectService {
    */
   async getDocumentsByHistoryId(historyId: string): Promise<any> {
     return await ProjectStatusDocumentQuery.getDocumentsByHistoryId(historyId);
+  }
+
+  // ==================== Worker Matching Methods ====================
+
+  /**
+   * Get workers available for matching to a project
+   */
+  async getMatchableWorkers(
+    projectId: string,
+    filters?: {
+      skill_category_id?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<{ workers: any[]; total: number }> {
+    return await ProjectMatchableWorkersQuery.getMatchableWorkers(projectId, filters);
+  }
+
+  /**
+   * Get matchable workers count by skill category
+   */
+  async getMatchableWorkersCountBySkill(projectId: string): Promise<
+    {
+      skill_category_id: string;
+      skill_name: string;
+      available_count: number;
+      required_count: number;
+    }[]
+  > {
+    return await ProjectMatchableWorkersQuery.getMatchableWorkersCountBySkill(projectId);
+  }
+
+  /**
+   * Auto-match helpers to a project
+   */
+  async autoMatchHelpers(projectId: string, userId: string): Promise<any> {
+    const operation = new ProjectAutoMatchHelpersOperation();
+    return await operation.autoMatchHelpers(projectId, userId);
+  }
+
+  /**
+   * Get auto-match preview for helpers
+   */
+  async getAutoMatchPreview(projectId: string): Promise<any> {
+    const operation = new ProjectAutoMatchHelpersOperation();
+    return await operation.getAutoMatchPreview(projectId);
   }
 }
 

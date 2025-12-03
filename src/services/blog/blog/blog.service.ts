@@ -1,11 +1,11 @@
-import { BlogFilters, CreateBlogDTO, UpdateBlogDTO } from '@/types/blog.types';
+import { BlogFilters, CreateBlogDto, UpdateBlogDto } from '@/types';
 import { BlogCreateOperation } from './operations/blog-create.operation';
 import { BlogDeleteOperation } from './operations/blog-delete.operation';
 import { BlogUpdateOperation } from './operations/blog-update.operation';
 import { BlogQuery } from './queries/blog.query';
 
 export class BlogService {
-  async createBlog(userId: string, data: CreateBlogDTO) {
+  async createBlog(userId: string, data: CreateBlogDto) {
     return await BlogCreateOperation.create(userId, data);
   }
 
@@ -17,7 +17,7 @@ export class BlogService {
     return await BlogQuery.getBlogById(id);
   }
 
-  async updateBlog(id: string, data: UpdateBlogDTO) {
+  async updateBlog(id: string, data: UpdateBlogDto) {
     return await BlogUpdateOperation.update(id, data);
   }
 

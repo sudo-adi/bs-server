@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { ProjectWithDetails } from '@/types/prisma.types';
+import type { ProjectWithDetails } from '@/types';
 
 export class ProjectCreateFromRequestOperation {
   /**

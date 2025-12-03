@@ -1,7 +1,6 @@
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { TrainingBatchWithEnrollments } from '@/models/training/trainingBatch.model';
 import { TRAINING_BATCH_STATUSES, TrainingBatchStatus } from '@/types/enums';
 
 export class TrainingBatchBaseQuery {
@@ -14,14 +13,25 @@ export class TrainingBatchBaseQuery {
     const where: Prisma.training_batchesWhereInput = {};
 
     if (filters?.status) {
-      // Validate status
-      if (!TRAINING_BATCH_STATUSES.includes(filters.status as TrainingBatchStatus)) {
-        throw new AppError(
-          `Invalid status: ${filters.status}. Must be one of: ${TRAINING_BATCH_STATUSES.join(', ')}`,
-          400
-        );
+      // Handle multiple statuses (comma-separated)
+      const statuses = filters.status.split(',').map((s) => s.trim());
+
+      // Validate each status
+      for (const status of statuses) {
+        if (!TRAINING_BATCH_STATUSES.includes(status as TrainingBatchStatus)) {
+          throw new AppError(
+            `Invalid status: ${status}. Must be one of: ${TRAINING_BATCH_STATUSES.join(', ')}`,
+            400
+          );
+        }
       }
-      where.status = filters.status;
+
+      // Use IN query if multiple statuses, direct match if single
+      if (statuses.length > 1) {
+        where.status = { in: statuses };
+      } else {
+        where.status = statuses[0];
+      }
     }
 
     if (filters?.search) {
@@ -41,6 +51,15 @@ export class TrainingBatchBaseQuery {
               status: { not: 'withdrawn' },
             },
             select: { id: true },
+          },
+          trainers: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              employee_code: true,
+            },
           },
         },
         orderBy: { start_date: 'desc' },
@@ -66,19 +85,47 @@ export class TrainingBatchBaseQuery {
   async getBatchById(
     id: string,
     includeEnrollments = false
-  ): Promise<TrainingBatchWithEnrollments> {
+  ): Promise<any> {
     const batch = await prisma.training_batches.findUnique({
       where: { id },
-      include: includeEnrollments
-        ? {
-            batch_enrollments: {
-              include: {
-                profiles: true,
+      include: {
+        trainers: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            employee_code: true,
+          },
+        },
+        ...(includeEnrollments
+          ? {
+              batch_enrollments: {
+                include: {
+                  profiles: {
+                    select: {
+                      id: true,
+                      candidate_code: true,
+                      first_name: true,
+                      middle_name: true,
+                      last_name: true,
+                      phone: true,
+                      email: true,
+                      current_stage: true,
+                      previous_stage: true,
+                      gender: true,
+                      date_of_birth: true,
+                      profile_photo_url: true,
+                      created_at: true,
+                      updated_at: true,
+                    },
+                  },
+                },
+                orderBy: { enrollment_date: 'desc' },
               },
-              orderBy: { enrollment_date: 'desc' },
-            },
-          }
-        : undefined,
+            }
+          : {}),
+      },
     });
 
     if (!batch) {

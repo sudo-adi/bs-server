@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { TrainingBatchWithEnrollments } from '@/models/training/trainingBatch.model';
+import { TrainingBatchWithEnrollments } from '@/types';
 import { TRAINING_BATCH_STATUSES, TrainingBatchStatus } from '@/types/enums';
 
 export class TrainingBatchBaseQuery {

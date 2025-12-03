@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { project_requests } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { ReviewProjectRequestDto } from '@/models/employers/employer.model';
+import { ReviewProjectRequestDto } from '@/types';
 
 export class ProjectRequestReviewOperation {
   static async review(id: string, data: ReviewProjectRequestDto): Promise<project_requests> {

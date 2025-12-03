@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import { User } from '@/models/admin/user.model';
+import { User } from '@/types';
 import { PasswordHelper } from '../helpers/password.helper';
 
 export class UserVerifyPasswordOperation {

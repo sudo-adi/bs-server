@@ -1,20 +1,18 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
+import { BatchEnrollment, CreateBatchEnrollmentDto } from '@/types';
 import {
-  BatchEnrollment,
-  CreateBatchEnrollmentDto,
-} from '@/models/training/batchEnrollment.model';
-import {
-  BatchEnrollmentStatus,
   BATCH_ENROLLMENT_STATUSES,
+  BatchEnrollmentStatus,
   mapBatchEnrollmentStatusToProfileStage,
 } from '@/types/enums';
+import { CodeGenerator } from '@/utils/codeGenerator';
 
 export class BatchEnrollmentCreateOperation {
   static async create(data: CreateBatchEnrollmentDto): Promise<BatchEnrollment> {
     return await prisma.$transaction(async (tx) => {
       const batch = await tx.training_batches.findUnique({
-        where: { id: data.batch_id },
+        where: { id: data.batch_id ?? undefined },
         select: { max_capacity: true },
       });
 
@@ -68,7 +66,29 @@ export class BatchEnrollmentCreateOperation {
         },
       });
 
-      const newStage = mapBatchEnrollmentStatusToProfileStage(enrollmentStatus as BatchEnrollmentStatus);
+      // Update candidate code from BSC to BST when enrolling in training
+      if (data.profile_id) {
+        const profile = await tx.profiles.findUnique({
+          where: { id: data.profile_id },
+          select: { candidate_code: true },
+        });
+
+        // Check if the candidate has a BSC code (candidate code)
+        if (profile?.candidate_code?.startsWith('BSC-')) {
+          // Generate new trainee code (BST)
+          const newCode = await CodeGenerator.generate('trainee');
+
+          // Update the profile with the new code
+          await tx.profiles.update({
+            where: { id: data.profile_id },
+            data: { candidate_code: newCode },
+          });
+        }
+      }
+
+      const newStage = mapBatchEnrollmentStatusToProfileStage(
+        enrollmentStatus as BatchEnrollmentStatus
+      );
       if (newStage && data.profile_id) {
         const latestTransition = await tx.stage_transitions.findFirst({
           where: { profile_id: data.profile_id },

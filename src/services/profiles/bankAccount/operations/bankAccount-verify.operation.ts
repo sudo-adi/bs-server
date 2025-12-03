@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { BankAccount, VerifyBankAccountDto } from '@/models/profiles/bankAccount.model';
-import { VerificationStatus, VERIFICATION_STATUSES } from '@/types/enums';
+import type { BankAccount, VerifyBankAccountDto } from '@/types';
+import { VERIFICATION_STATUSES, VerificationStatus } from '@/types/enums';
 
 export class BankAccountVerifyOperation {
   static async verify(id: string, data: VerifyBankAccountDto): Promise<BankAccount> {

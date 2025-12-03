@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { UpdateUserDto, UserResponse } from '@/models/admin/user.model';
+import { UpdateUserDto, UserResponse } from '@/types';
 
 export class UserUpdateOperation {
   static async update(id: string, data: UpdateUserDto): Promise<UserResponse> {
@@ -41,10 +41,8 @@ export class UserUpdateOperation {
         email: data.email,
         username: data.username,
         full_name: data.full_name,
-        phone: data.phone_number,
-        role_id: data.role_id,
+        phone: data.phone,
         is_active: data.is_active,
-        last_login: data.last_login,
       },
     });
 

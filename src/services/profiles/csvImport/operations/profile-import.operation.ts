@@ -1,9 +1,9 @@
 import prisma from '@/config/prisma';
+import type { ImportOptions, ImportRowResult, ProfileCsvRow } from '@/types';
 import { ProfileStage } from '@/types/enums';
-import type { ImportOptions, ImportRowResult, ProfileCsvRow } from '@/types/csvImport.types';
 import { sanitizeObject } from '@/utils/sanitize';
-import { CsvRowValidator } from '../validators/csv-row.validator';
 import { ProfileCodeHelper } from '../../profile/helpers/profile-code.helper';
+import { CsvRowValidator } from '../validators/csv-row.validator';
 
 export class ProfileImportOperation {
   static async importRow(
@@ -17,11 +17,12 @@ export class ProfileImportOperation {
       success: false,
       errors: [],
       warnings: [],
+      data: row, // Include row data for error reporting
     };
 
     try {
       // Validate row
-      const validationErrors = CsvRowValidator.validate(row, rowNumber);
+      const validationErrors = CsvRowValidator.validate(row);
       if (validationErrors.length > 0) {
         result.errors = validationErrors.map((e) => `${e.field}: ${e.message}`);
         return result;
@@ -31,7 +32,7 @@ export class ProfileImportOperation {
       const sanitizedRow = sanitizeObject(row);
 
       // Normalize phone number
-      const phone = sanitizedRow.phone.replace(/[\s\-\(\)]/g, '');
+      const phone = sanitizedRow.phone.replace(/[\s\-()]/g, '');
 
       // Check for existing profile
       const existingProfile = await prisma.profiles.findFirst({
@@ -65,10 +66,7 @@ export class ProfileImportOperation {
         initialStage = ProfileStage.ONBOARDED;
       }
 
-      // Generate profile code
-      const profileCode = await ProfileCodeHelper.generate();
-
-      // Create profile with transaction
+      // Create profile with transaction (increased timeout for large imports)
       const profile = await prisma.$transaction(async (tx) => {
         // Create or update profile
         let newProfile;
@@ -92,6 +90,9 @@ export class ProfileImportOperation {
             },
           });
         } else {
+          // Generate profile code inside transaction to avoid race conditions
+          const profileCode = await ProfileCodeHelper.generate();
+
           // Create new profile
           newProfile = await tx.profiles.create({
             data: {
@@ -107,6 +108,12 @@ export class ProfileImportOperation {
               date_of_birth: sanitizedRow.date_of_birth
                 ? new Date(sanitizedRow.date_of_birth)
                 : null,
+              // Statutory & Compliance Information
+              esic_number: sanitizedRow.esic_number?.replace(/[\s\-]/g, '') || null,
+              uan_number: sanitizedRow.uan_number?.replace(/[\s\-]/g, '') || null,
+              pf_account_number: sanitizedRow.pf_account_number || null,
+              pan_number: sanitizedRow.pan_number?.toUpperCase() || null,
+              health_insurance_policy_number: sanitizedRow.health_insurance_policy_number || null,
               is_active: true,
             },
           });
@@ -207,73 +214,73 @@ export class ProfileImportOperation {
 
         // Create qualification if provided
         if (sanitizedRow.qualification_type) {
-          // Find or create qualification type
-          let qualType = await tx.qualification_types.findFirst({
+          // Find qualification type (do NOT auto-create)
+          const qualType = await tx.qualification_types.findFirst({
             where: {
               name: {
                 equals: sanitizedRow.qualification_type,
                 mode: 'insensitive',
               },
+              is_active: true,
             },
           });
 
           if (!qualType) {
-            qualType = await tx.qualification_types.create({
+            // Don't throw error - just add warning and skip qualification
+            result.warnings?.push(
+              `Qualification type "${sanitizedRow.qualification_type}" not found in system. Skipped qualification data.`
+            );
+          } else {
+            await tx.qualifications.create({
               data: {
-                name: sanitizedRow.qualification_type,
-                is_active: true,
+                profile_id: newProfile.id,
+                qualification_type_id: qualType.id,
+                institution_name: sanitizedRow.institution_name || null,
+                field_of_study: sanitizedRow.field_of_study || null,
+                year_of_completion: sanitizedRow.year_of_completion
+                  ? parseInt(sanitizedRow.year_of_completion)
+                  : null,
+                percentage_or_grade: sanitizedRow.percentage_or_grade || null,
               },
             });
           }
-
-          await tx.qualifications.create({
-            data: {
-              profile_id: newProfile.id,
-              qualification_type_id: qualType.id,
-              institution_name: sanitizedRow.institution_name || null,
-              field_of_study: sanitizedRow.field_of_study || null,
-              year_of_completion: sanitizedRow.year_of_completion
-                ? parseInt(sanitizedRow.year_of_completion)
-                : null,
-              percentage_or_grade: sanitizedRow.percentage_or_grade || null,
-            },
-          });
         }
 
         // Create skill if provided
         if (sanitizedRow.skill_category) {
-          // Find or create skill category
-          let skillCat = await tx.skill_categories.findFirst({
+          // Find skill category (do NOT auto-create)
+          const skillCat = await tx.skill_categories.findFirst({
             where: {
               name: {
                 equals: sanitizedRow.skill_category,
                 mode: 'insensitive',
               },
+              is_active: true,
             },
           });
 
           if (!skillCat) {
-            skillCat = await tx.skill_categories.create({
+            // Don't throw error - just add warning and skip skill
+            result.warnings?.push(
+              `Skill category "${sanitizedRow.skill_category}" not found in system. Skipped skill data.`
+            );
+          } else {
+            await tx.profile_skills.create({
               data: {
-                name: sanitizedRow.skill_category,
-                is_active: true,
+                profile_id: newProfile.id,
+                skill_category_id: skillCat.id,
+                years_of_experience: sanitizedRow.years_of_experience
+                  ? parseInt(sanitizedRow.years_of_experience)
+                  : 0,
+                is_primary: true,
               },
             });
           }
-
-          await tx.profile_skills.create({
-            data: {
-              profile_id: newProfile.id,
-              skill_category_id: skillCat.id,
-              years_of_experience: sanitizedRow.years_of_experience
-                ? parseInt(sanitizedRow.years_of_experience)
-                : 0,
-              is_primary: true,
-            },
-          });
         }
 
         return newProfile;
+      }, {
+        timeout: 30000, // 30 seconds timeout for imports with complex data
       });
 
       result.success = true;
@@ -282,14 +289,21 @@ export class ProfileImportOperation {
 
       // Add warning if document was created without file
       if (sanitizedRow.doc_type && sanitizedRow.doc_number) {
-        result.warnings?.push(
-          'Document record created. File needs to be uploaded separately.'
-        );
+        result.warnings?.push('Document record created. File needs to be uploaded separately.');
       }
     } catch (error: unknown) {
-      result.errors?.push(
-        error instanceof Error ? error.message : 'Unknown error occurred'
-      );
+      if (error instanceof Error) {
+        // Handle Prisma unique constraint violations
+        if (error.message.includes('Unique constraint failed on the fields: (`candidate_code`)')) {
+          result.errors?.push('Duplicate candidate code generated. Please retry the import.');
+        } else if (error.message.includes('Transaction already closed') || error.message.includes('Transaction not found')) {
+          result.errors?.push('Transaction timeout. This row took too long to process.');
+        } else {
+          result.errors?.push(error.message);
+        }
+      } else {
+        result.errors?.push('Unknown error occurred');
+      }
     }
 
     return result;

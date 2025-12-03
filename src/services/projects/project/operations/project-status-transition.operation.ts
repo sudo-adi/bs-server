@@ -36,8 +36,8 @@ export class ProjectStatusTransitionOperation {
       // Validate transition
       const validation = ProjectStatusValidator.validateTransition(
         project,
-        dto.to_status,
-        dto.attributable_to,
+        dto.to_status! as any,
+        dto.attributable_to as any,
         dto.documents
       );
 
@@ -58,11 +58,11 @@ export class ProjectStatusTransitionOperation {
         data: {
           project_id: projectId,
           from_status: project.status,
-          to_status: dto.to_status,
+          to_status: dto.to_status!,
           change_reason: dto.change_reason,
           attributable_to: dto.attributable_to,
-          status_date: dto.status_date,
-          changed_by_user_id: dto.changed_by_user_id,
+          status_date: dto.status_date!,
+          changed_by_user_id: dto.changed_by_user_id!,
         },
       });
 
@@ -76,7 +76,7 @@ export class ProjectStatusTransitionOperation {
             data: {
               project_status_history_id: statusHistory.id,
               project_id: projectId,
-              status: dto.to_status,
+              status: dto.to_status!,
               document_title: doc.document_title,
               file_url: doc.file_url,
               uploaded_by_user_id: doc.uploaded_by_user_id || dto.changed_by_user_id,
@@ -128,10 +128,11 @@ export class ProjectStatusTransitionOperation {
       });
 
       return {
+        success: true,
         project: updatedProject,
         status_history: statusHistory,
         documents,
-        affected_workers: workerResults,
+        affected_workers: workerResults.length,
       };
     } catch (error) {
       logger.error('Error transitioning project status', { error, projectId, dto });
@@ -168,14 +169,14 @@ export class ProjectStatusTransitionOperation {
     });
 
     // Update assignments to active
-    await prisma.project_assignments.updateMany({
+    await prisma.project_worker_assignments.updateMany({
       where: {
         project_id: projectId,
         status: 'assigned',
       },
       data: {
         status: 'active',
-        deployment_date: actualStartDate,
+        deployed_date: actualStartDate,
       },
     });
 
@@ -286,14 +287,14 @@ export class ProjectStatusTransitionOperation {
     });
 
     // Update assignments to active
-    await prisma.project_assignments.updateMany({
+    await prisma.project_worker_assignments.updateMany({
       where: {
         project_id: projectId,
         status: 'assigned',
       },
       data: {
         status: 'active',
-        deployment_date: data.actual_start_date,
+        deployed_date: data.actual_start_date,
       },
     });
 

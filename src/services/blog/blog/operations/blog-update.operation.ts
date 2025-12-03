@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from '@/config/prisma';
-import { UpdateBlogDTO } from '@/types/blog.types';
+import { UpdateBlogDto } from '@/types';
 
 export class BlogUpdateOperation {
   /**
    * Update a blog post
    */
-  static async update(id: string, data: UpdateBlogDTO) {
+  static async update(id: string, data: UpdateBlogDto) {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;

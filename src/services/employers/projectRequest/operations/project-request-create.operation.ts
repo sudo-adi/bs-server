@@ -1,10 +1,15 @@
 import prisma from '@/config/prisma';
 import type { project_requests } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { CreateProjectRequestDto } from '@/models/employers/employer.model';
+import { CreateProjectRequestDto } from '@/types';
 
 export class ProjectRequestCreateOperation {
   static async create(data: CreateProjectRequestDto): Promise<project_requests> {
+    // Validate required fields
+    if (!data.employer_id) {
+      throw new AppError('Employer ID is required', 400);
+    }
+
     // Verify employer exists
     const employer = await prisma.employers.findUnique({
       where: { id: data.employer_id },

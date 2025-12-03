@@ -1,4 +1,4 @@
-import { UserResponse } from '@/models/admin/user.model';
+import { UserResponse } from '@/types';
 import { AuthLoginOperation } from './operations/auth-login.operation';
 import { AuthTokenOperation } from './operations/auth-token.operation';
 import { AuthUserQuery } from './queries/auth-user.query';

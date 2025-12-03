@@ -8,7 +8,7 @@ export class RoleCreateOperation {
         name: input.name,
         description: input.description,
         is_active: input.is_active ?? true,
-        permissions: {
+        role_permissions: {
           create: input.permissions.map((perm) => ({
             module_name: perm.module_name,
             can_view: perm.can_view,
@@ -19,7 +19,7 @@ export class RoleCreateOperation {
         },
       },
       include: {
-        permissions: true,
+        role_permissions: true,
       },
     });
     return role as Role;

@@ -1,17 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { BlogFilters, CreateBlogDto, UpdateBlogDto } from '@/types';
 import prisma from '../../config/prisma';
 import { Prisma } from '../../generated/prisma';
-import { BlogFilters, CreateBlogDTO, UpdateBlogDTO } from '../../types/blog.types';
 
 export class BlogService {
-  async createBlog(userId: string, data: CreateBlogDTO) {
+  async createBlog(userId: string, data: CreateBlogDto) {
+    // Verify user exists before creating blog
+    const userExists = await prisma.users.findUnique({
+      where: { id: userId },
+    });
+
     const blog = await prisma.blogs.create({
       data: {
         title: data.title,
         content: data.content,
         image_url: data.image_url,
         category: data.category,
-        created_by_user_id: userId,
+        created_by_user_id: userExists ? userId : null,
       } as any,
       include: {
         users: {
@@ -89,7 +94,7 @@ export class BlogService {
     return blog;
   }
 
-  async updateBlog(id: string, data: UpdateBlogDTO) {
+  async updateBlog(id: string, data: UpdateBlogDto) {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;

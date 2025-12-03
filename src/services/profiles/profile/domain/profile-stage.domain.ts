@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { profiles } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { ChangeStageDto } from '@/models/profiles/profile.model';
+import { ChangeStageDto } from '@/types';
 import { PROFILE_STAGES, ProfileStage, isValidStageTransition } from '@/types/enums';
 
 export class ProfileStageDomain {

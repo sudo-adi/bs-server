@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { BankAccount } from '@/models/profiles/bankAccount.model';
+import type { BankAccount } from '@/types';
 
 export class BankAccountQuery {
   static async getProfileBankAccounts(profileId: string): Promise<BankAccount[]> {

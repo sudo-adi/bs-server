@@ -1,16 +1,14 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import {
-  ProjectSkillRequirement,
-  UpdateProjectSkillRequirementDto,
-} from '@/models/projects/projectResourceRequirement.model';
+import type { UpdateProjectSkillRequirementDto } from '@/types';
+import type { ProjectResourceRequirement } from '@/types/prisma.types';
 
 export class ResourceRequirementUpdateOperation {
   static async update(
-    id: number,
+    id: string,
     data: UpdateProjectSkillRequirementDto
-  ): Promise<ProjectSkillRequirement> {
-    const updateData: any = {};
+  ): Promise<ProjectResourceRequirement> {
+    const updateData: Partial<ProjectResourceRequirement> = {};
 
     if (data.required_count !== undefined) updateData.required_count = data.required_count;
     if (data.notes !== undefined) updateData.notes = data.notes;
@@ -21,13 +19,13 @@ export class ResourceRequirementUpdateOperation {
 
     try {
       const requirement = await prisma.project_resource_requirements.update({
-        where: { id: id.toString() },
+        where: { id },
         data: updateData,
       });
 
-      return requirement as any;
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+      return requirement;
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         throw new AppError('Project skill requirement not found', 404);
       }
       throw error;

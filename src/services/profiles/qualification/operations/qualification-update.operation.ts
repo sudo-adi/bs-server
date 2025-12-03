@@ -1,6 +1,7 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { Qualification, UpdateQualificationDto } from '@/models/profiles/qualification.model';
+import type { Qualification, UpdateQualificationDto } from '@/types';
+import { cleanUuid } from '@/utils/uuidHelper';
 
 export class QualificationUpdateOperation {
   static async update(id: string, data: UpdateQualificationDto): Promise<Qualification> {
@@ -14,7 +15,27 @@ export class QualificationUpdateOperation {
 
     const updateData: any = {};
 
-    if (data.qualification_type_id !== undefined) updateData.qualification_type_id = data.qualification_type_id;
+    // Clean up qualification_type_id - convert empty strings to null for UUID fields
+    if (data.qualification_type_id !== undefined) {
+      updateData.qualification_type_id = cleanUuid(data.qualification_type_id);
+
+      // Validate qualification_type_id exists and is active
+      if (updateData.qualification_type_id) {
+        const qualificationType = await prisma.qualification_types.findFirst({
+          where: {
+            id: updateData.qualification_type_id,
+            is_active: true,
+          },
+        });
+
+        if (!qualificationType) {
+          throw new AppError(
+            'Invalid qualification type. Please select a valid qualification type from the system.',
+            400
+          );
+        }
+      }
+    }
     if (data.institution_name !== undefined) updateData.institution_name = data.institution_name;
     if (data.field_of_study !== undefined) updateData.field_of_study = data.field_of_study;
     if (data.year_of_completion !== undefined) updateData.year_of_completion = data.year_of_completion;

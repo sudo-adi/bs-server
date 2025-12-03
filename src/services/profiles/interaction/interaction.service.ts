@@ -1,4 +1,4 @@
-import type { CreateInteractionDto, Interaction, UpdateInteractionDto } from '@/types/prisma.types';
+import type { CreateInteractionDto, Interaction, UpdateInteractionDto } from '@/types';
 import { InteractionCreateOperation } from './operations/interaction-create.operation';
 import { InteractionDeleteOperation } from './operations/interaction-delete.operation';
 import { InteractionUpdateOperation } from './operations/interaction-update.operation';

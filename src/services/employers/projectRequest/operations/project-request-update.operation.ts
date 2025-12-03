@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { project_requests } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { UpdateProjectRequestDto } from '@/models/employers/employer.model';
+import { UpdateProjectRequestDto } from '@/types';
 
 export class ProjectRequestUpdateOperation {
   static async update(id: string, data: UpdateProjectRequestDto): Promise<project_requests> {

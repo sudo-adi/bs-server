@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { ProfileSkill, VerifySkillDto } from '@/models/profiles/skill.model';
+import type { ProfileSkill, VerifySkillDto } from '@/types';
 
 export class ProfileSkillVerifyOperation {
   static async verify(id: string, data: VerifySkillDto): Promise<ProfileSkill> {

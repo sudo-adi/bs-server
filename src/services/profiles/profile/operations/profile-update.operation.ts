@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import type { profiles } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { UpdateProfileDto } from '@/types/prisma.types';
+import { UpdateProfileDto } from '@/types/domain';
 import { sanitizeObject } from '@/utils/sanitize';
 
 export class ProfileUpdateOperation {

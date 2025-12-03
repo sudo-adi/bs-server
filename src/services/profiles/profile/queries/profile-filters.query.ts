@@ -51,20 +51,21 @@ export class ProfileFiltersQuery {
           orderBy: { blacklisted_at: 'desc' },
           take: 1,
         },
-        project_assignments: {
-          where: {
-            status: 'deployed', // Only get currently deployed assignments
-          },
-          include: {
-            projects: {
-              select: {
-                name: true,
-              },
-            },
-          },
-          orderBy: { deployment_date: 'desc' },
-          take: 1, // Get the most recent deployment
-        },
+        // COMMENTED OUT - Will implement project assignments later with different approach
+        // project_worker_assignments: {
+        //   where: {
+        //     status: 'deployed', // Only get currently deployed assignments
+        //   },
+        //   include: {
+        //     projects: {
+        //       select: {
+        //         name: true,
+        //       },
+        //     },
+        //   },
+        //   orderBy: { deployment_date: 'desc' },
+        //   take: 1, // Get the most recent deployment
+        // },
         batch_enrollments: {
           where: {
             status: {
@@ -84,7 +85,8 @@ export class ProfileFiltersQuery {
     });
 
     const profilesWithStage = profiles.map((profile: any) => {
-      const currentAssignment = profile.project_assignments?.[0];
+      // COMMENTED OUT - Will implement project assignments later
+      // const currentAssignment = profile.project_worker_assignments?.[0];
       const currentEnrollment = profile.batch_enrollments?.[0];
 
       // Calculate training days left
@@ -110,14 +112,17 @@ export class ProfileFiltersQuery {
         ...profile,
         current_stage: profile.stage_transitions[0]?.to_stage || null,
         is_blacklisted: profile.profile_blacklist && profile.profile_blacklist.length > 0,
-        current_project_name: currentAssignment?.projects?.name || null,
-        current_deployment_start_date: currentAssignment?.deployment_date || null,
-        current_deployment_end_date:
-          currentAssignment?.actual_end_date || currentAssignment?.expected_end_date || null,
+        current_project_name: null, // Temporary - will be implemented later
+        current_deployment_start_date: null, // Temporary - will be implemented later
+        current_deployment_end_date: null, // Temporary - will be implemented later
+        // current_project_name: currentAssignment?.projects?.name || null,
+        // current_deployment_start_date: currentAssignment?.deployment_date || null,
+        // current_deployment_end_date:
+        //   currentAssignment?.actual_end_date || currentAssignment?.expected_end_date || null,
         batch_enrollments: enrichedBatchEnrollments,
         stage_transitions: undefined, // Remove from response
         profile_blacklist: undefined, // Remove from response
-        project_assignments: undefined, // Remove from response
+        project_worker_assignments: undefined, // Remove from response
       };
     });
 

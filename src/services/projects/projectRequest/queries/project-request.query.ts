@@ -1,22 +1,19 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import {
-  EmployerProjectRequirement,
-  EmployerProjectRequirementWithDetails,
-} from '@/models/projects/projectRequest.model';
 import { PROJECT_REQUEST_STATUSES, ProjectRequestStatus } from '@/types/enums';
+import type { ProjectRequest } from '@/types/prisma.types';
 
 export class ProjectRequestQuery {
   static async getAllRequirements(filters?: {
-    employer_id?: number;
+    employer_id?: string;
     status?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ requirements: EmployerProjectRequirement[]; total: number }> {
-    const where: any = {};
+  }): Promise<{ requirements: ProjectRequest[]; total: number }> {
+    const where: Record<string, string> = {};
 
     if (filters?.employer_id) {
-      where.employer_id = filters.employer_id.toString();
+      where.employer_id = filters.employer_id;
     }
 
     if (filters?.status) {
@@ -38,28 +35,17 @@ export class ProjectRequestQuery {
       skip: filters?.offset,
     });
 
-    return { requirements: results as any[], total };
+    return { requirements: results, total };
   }
 
-  static async getRequirementById(
-    id: number,
-    includeDetails = false
-  ): Promise<EmployerProjectRequirementWithDetails> {
-    const requirement: any = await prisma.project_requests.findUnique({
-      where: { id: id.toString() },
+  static async getRequirementById(id: string, includeDetails = false): Promise<ProjectRequest> {
+    const requirement = await prisma.project_requests.findUnique({
+      where: { id },
       include: includeDetails ? { employers: true, projects: true } : undefined,
     });
 
     if (!requirement) {
       throw new AppError('Employer project requirement not found', 404);
-    }
-
-    if (includeDetails) {
-      return {
-        ...requirement,
-        employer: requirement.employers,
-        project: requirement.projects,
-      };
     }
 
     return requirement;

@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
-import { User, UserResponse } from '@/models/admin/user.model';
+import { User, UserResponse } from '@/types';
 
 export class UserQuery {
   /**
@@ -10,7 +10,7 @@ export class UserQuery {
     const user = await prisma.users.findUnique({
       where: { id },
       include: {
-        role: {
+        roles: {
           select: {
             id: true,
             name: true,
@@ -29,7 +29,7 @@ export class UserQuery {
     const { password_hash, ...userWithoutPassword } = user;
     return {
       ...userWithoutPassword,
-      role: user.role || undefined,
+      roles: user.roles || undefined,
     } as any;
   }
 
@@ -71,7 +71,7 @@ export class UserQuery {
       where,
       orderBy: { created_at: 'desc' },
       include: {
-        role: {
+        roles: {
           select: {
             id: true,
             name: true,
@@ -84,7 +84,7 @@ export class UserQuery {
     // Return users without password hash and with user_roles array format
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return users.map(({ password_hash, role, ...user }) => ({
+    return users.map(({ password_hash, roles: role, ...user }) => ({
       ...user,
       user_roles: role
         ? [

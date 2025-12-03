@@ -1,4 +1,4 @@
-import { ExtractedProjectData, ScrapedArticle, ScraperResult } from '@/models/utilities/newsUpdate.model';
+import { ExtractedProjectData, ScrapedArticle, ScraperResult } from '@/types';
 import { ArticleScraperOperation } from './operations/article-scraper.operation';
 import { DataExtractorOperation } from './operations/data-extractor.operation';
 import { ScraperRunnerOperation } from './operations/scraper-runner.operation';

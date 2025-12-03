@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { CreateEmployerDto, Employer } from '@/models/employers/employer.model';
+import { CreateEmployerDto, Employer } from '@/types';
 import bcrypt from 'bcrypt';
 import { EmployerCodeHelper } from '../helpers/employer-code.helper';
 

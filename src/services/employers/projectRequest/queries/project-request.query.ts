@@ -52,6 +52,31 @@ export class ProjectRequestQuery {
               code: true,
               name: true,
               status: true,
+              location: true,
+              start_date: true,
+              end_date: true,
+              project_worker_assignments: {
+                select: {
+                  id: true,
+                  created_at: true,
+                  skill_categories: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                  profiles: {
+                    select: {
+                      id: true,
+                      candidate_code: true,
+                      first_name: true,
+                      last_name: true,
+                      phone: true,
+                      profile_photo_url: true,
+                    },
+                  },
+                },
+              },
             },
           },
           users: {
@@ -66,7 +91,21 @@ export class ProjectRequestQuery {
       prisma.project_requests.count({ where }),
     ]);
 
-    return { projectRequests, total };
+    // Filter out worker details for projects in "planning" status
+    const processedRequests = projectRequests.map((request: any) => {
+      if (request.projects && request.projects.status === 'planning') {
+        return {
+          ...request,
+          projects: {
+            ...request.projects,
+            project_worker_assignments: [], // Hide worker details for planning status
+          },
+        };
+      }
+      return request;
+    }) as any;
+
+    return { projectRequests: processedRequests, total };
   }
 
   /**

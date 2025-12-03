@@ -9,9 +9,10 @@ import csvImportRoutes from './csvImport.routes';
 import documentRoutes from './document.routes';
 import interactionRoutes from './interaction.routes';
 import profileRoutes from './profile.routes';
+import profileBlacklistRoutes from './profileBlacklist.routes';
 import qualificationRoutes from './qualification.routes';
+import salarySlipRoutes from './salarySlip.routes';
 import skillRoutes from './skill.routes';
-
 const router = Router();
 
 // Main profile routes (CRUD, stage management)
@@ -30,5 +31,9 @@ router.use('/:id/qualifications', validate(uuidParamSchema, 'params'), qualifica
 router.use('/:id/interactions', validate(uuidParamSchema, 'params'), interactionRoutes);
 router.use('/:id/documents', validate(uuidParamSchema, 'params'), documentRoutes);
 router.use('/:id/bank-accounts', validate(uuidParamSchema, 'params'), bankAccountRoutes);
+router.use('/:id/blacklist', validate(uuidParamSchema, 'params'), profileBlacklistRoutes);
+
+// Salary slip routes (note: uses different param structure)
+router.use('/', salarySlipRoutes);
 
 export default router;

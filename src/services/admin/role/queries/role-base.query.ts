@@ -1,5 +1,5 @@
-import db from '@/config/database';
-import { Role, RolePermission, RoleWithPermissions } from '@/models/admin/role.model';
+import prisma from '@/config/prisma';
+import { Role, RolePermission, RoleWithPermissions } from '@/types';
 
 export class RoleBaseQuery {
   /**
@@ -7,111 +7,96 @@ export class RoleBaseQuery {
    */
   static async getAllRoles(filters?: {
     is_active?: boolean;
-    department?: string;
     include_permissions?: boolean;
   }): Promise<RoleWithPermissions[]> {
-    let query = `
-      SELECT r.*,
-        (SELECT COUNT(*) FROM users WHERE role_id = r.id AND is_active = true) as active_users_count
-      FROM roles r
-      WHERE 1=1
-    `;
+    const roles = await prisma.roles.findMany({
+      where: {
+        is_active: filters?.is_active,
+      },
+      include: {
+        role_permissions: filters?.include_permissions ?? false,
+        users: {
+          where: { is_active: true },
+          select: { id: true },
+        },
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
 
-    const values: unknown[] = [];
-    let paramCount = 1;
-
-    if (filters?.is_active !== undefined) {
-      query += ` AND r.is_active = $${paramCount}`;
-      values.push(filters.is_active);
-      paramCount++;
-    }
-
-    if (filters?.department) {
-      query += ` AND r.department = $${paramCount}`;
-      values.push(filters.department);
-      paramCount++;
-    }
-
-    query += ' ORDER BY r.hierarchy_level, r.created_at DESC';
-
-    const result = await db.query(query, values);
-    const roles: RoleWithPermissions[] = result.rows;
-
-    // Include permissions if requested
-    if (filters?.include_permissions) {
-      for (const role of roles) {
-        role.permissions = await this.getRolePermissions(role.id);
-      }
-    }
-
-    return roles;
+    return roles.map((role) => ({
+      ...role,
+      permissions: role.role_permissions,
+      active_users_count: role.users.length,
+    }));
   }
 
   /**
    * Get role by ID with permissions
    */
   static async getRoleById(
-    id: number,
+    id: string,
     include_permissions = true
   ): Promise<RoleWithPermissions | null> {
-    const result = await db.query(
-      `SELECT r.*,
-        (SELECT COUNT(*) FROM users WHERE role_id = r.id AND is_active = true) as active_users_count
-       FROM roles r 
-       WHERE r.id = $1`,
-      [id]
-    );
+    const role = await prisma.roles.findUnique({
+      where: { id },
+      include: {
+        role_permissions: include_permissions,
+        users: {
+          where: { is_active: true },
+          select: { id: true },
+        },
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!role) {
       return null;
     }
 
-    const role: RoleWithPermissions = result.rows[0];
-
-    if (include_permissions) {
-      role.permissions = await this.getRolePermissions(id);
-    }
-
-    return role;
+    return {
+      ...role,
+      permissions: role.role_permissions,
+      active_users_count: role.users.length,
+    };
   }
 
   /**
-   * Get role by code
+   * Get role by name
    */
-  static async getRoleByCode(role_code: string): Promise<Role | null> {
-    const result = await db.query('SELECT * FROM roles WHERE role_code = $1', [role_code]);
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return result.rows[0];
+  static async getRoleByName(name: string): Promise<Role | null> {
+    return prisma.roles.findUnique({
+      where: { name },
+    });
   }
 
   /**
    * Get role permissions
    */
-  static async getRolePermissions(role_id: number): Promise<RolePermission[]> {
-    const result = await db.query(
-      'SELECT * FROM role_permissions WHERE role_id = $1 ORDER BY module',
-      [role_id]
-    );
-
-    return result.rows;
+  static async getRolePermissions(role_id: string): Promise<RolePermission[]> {
+    return prisma.role_permissions.findMany({
+      where: { role_id },
+      orderBy: { module_name: 'asc' },
+    });
   }
 
   /**
    * Get users assigned to a role
    */
-  static async getRoleUsers(role_id: number): Promise<unknown[]> {
-    const result = await db.query(
-      `SELECT id, username, email, full_name, employee_id, designation, department, is_active, last_login, created_at
-       FROM users
-       WHERE role_id = $1
-       ORDER BY created_at DESC`,
-      [role_id]
-    );
-
-    return result.rows;
+  static async getRoleUsers(role_id: string): Promise<unknown[]> {
+    return prisma.users.findMany({
+      where: { role_id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        full_name: true,
+        phone: true,
+        is_active: true,
+        last_login: true,
+        created_at: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
   }
 }

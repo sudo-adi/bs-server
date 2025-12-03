@@ -1,9 +1,4 @@
-import type {
-  Document,
-  CreateDocumentDto,
-  UpdateDocumentDto,
-  VerifyDocumentDto,
-} from '@/models/profiles/document.model';
+import type { CreateDocumentDto, Document, UpdateDocumentDto, VerifyDocumentDto } from '@/types';
 import { DocumentCreateOperation } from './operations/document-create.operation';
 import { DocumentDeleteOperation } from './operations/document-delete.operation';
 import { DocumentUpdateOperation } from './operations/document-update.operation';

@@ -2,7 +2,7 @@ import type { employer_authorized_persons } from '@/generated/prisma';
 import {
   CreateEmployerAuthorizedPersonDto,
   UpdateEmployerAuthorizedPersonDto,
-} from '@/models/employers/employer.model';
+} from '@/types';
 import { AuthorizedPersonCreateOperation } from './operations/authorized-person-create.operation';
 import { AuthorizedPersonDeleteOperation } from './operations/authorized-person-delete.operation';
 import { AuthorizedPersonUpdateOperation } from './operations/authorized-person-update.operation';

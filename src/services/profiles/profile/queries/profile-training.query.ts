@@ -8,6 +8,7 @@ export class ProfileTrainingQuery {
   static async getProfilesByTraining(filters: {
     trainer_name?: string;
     training_batch_id?: string;
+    has_batch_enrollment?: boolean;
     isActive?: boolean;
     isBlacklisted?: boolean;
     search?: string;
@@ -16,25 +17,40 @@ export class ProfileTrainingQuery {
   }): Promise<{ profiles: profiles[]; total: number }> {
     const where: any = {
       deleted_at: null,
-      batch_enrollments: {
-        some: {
-          status: {
-            in: ['enrolled', 'in_progress'],
-          },
-          ...(filters.training_batch_id && {
-            batch_id: filters.training_batch_id,
-          }),
-          ...(filters.trainer_name && {
-            training_batches: {
-              trainer_name: {
-                contains: filters.trainer_name,
-                mode: 'insensitive',
-              },
-            },
-          }),
-        },
+    };
+
+    // Build batch_enrollments filter based on provided criteria
+    // Include enrolled, in_progress (ongoing), and completed (trained) statuses
+    const batchEnrollmentFilter: any = {
+      status: {
+        in: ['enrolled', 'in_progress', 'ongoing', 'completed'],
       },
     };
+
+    // Add specific batch filter if provided
+    if (filters.training_batch_id) {
+      batchEnrollmentFilter.batch_id = filters.training_batch_id;
+    }
+
+    // Add trainer filter if provided
+    if (filters.trainer_name) {
+      batchEnrollmentFilter.training_batches = {
+        trainers: {
+          name: {
+            contains: filters.trainer_name,
+            mode: 'insensitive',
+          },
+        },
+      };
+    }
+
+    // Apply batch enrollment filter
+    // If has_batch_enrollment is explicitly true, or if any training-specific filters are provided
+    if (filters.has_batch_enrollment || filters.training_batch_id || filters.trainer_name) {
+      where.batch_enrollments = {
+        some: batchEnrollmentFilter,
+      };
+    }
 
     if (filters.isActive !== undefined) {
       where.is_active = filters.isActive;
@@ -70,28 +86,33 @@ export class ProfileTrainingQuery {
           orderBy: { blacklisted_at: 'desc' },
           take: 1,
         },
-        project_assignments: {
-          where: {
-            status: 'deployed',
-          },
-          include: {
-            projects: {
-              select: {
-                name: true,
-              },
-            },
-          },
-          orderBy: { deployment_date: 'desc' },
-          take: 1,
-        },
+        // COMMENTED OUT - Will implement project assignments later
+        // project_worker_assignments: {
+        //   where: {
+        //     project_id: { not: null },
+        //   },
+        //   include: {
+        //     projects: {
+        //       select: {
+        //         name: true,
+        //       },
+        //     },
+        //   },
+        //   orderBy: { created_at: 'desc' },
+        //   take: 1,
+        // },
         batch_enrollments: {
           where: {
             status: {
-              in: ['enrolled', 'in_progress'],
+              in: ['enrolled', 'in_progress', 'ongoing', 'completed'],
             },
           },
           include: {
-            training_batches: true,
+            training_batches: {
+              include: {
+                trainers: true,
+              },
+            },
           },
           orderBy: { enrollment_date: 'desc' },
           take: 1,
@@ -104,7 +125,8 @@ export class ProfileTrainingQuery {
 
     // Transform profiles with training batch data
     const profilesWithStage = profiles.map((profile: any) => {
-      const currentAssignment = profile.project_assignments?.[0];
+      // COMMENTED OUT - Will implement project assignments later
+      // const currentAssignment = profile.project_worker_assignments?.[0];
       const currentEnrollment = profile.batch_enrollments?.[0];
 
       // Calculate training days left
@@ -130,14 +152,13 @@ export class ProfileTrainingQuery {
         ...profile,
         current_stage: profile.stage_transitions[0]?.to_stage || null,
         is_blacklisted: profile.profile_blacklist && profile.profile_blacklist.length > 0,
-        current_project_name: currentAssignment?.projects?.name || null,
-        current_deployment_start_date: currentAssignment?.deployment_date || null,
-        current_deployment_end_date:
-          currentAssignment?.actual_end_date || currentAssignment?.expected_end_date || null,
+        current_project_name: null,
+        current_deployment_start_date: null,
+        current_deployment_end_date: null,
         batch_enrollments: enrichedBatchEnrollments,
         stage_transitions: undefined,
         profile_blacklist: undefined,
-        project_assignments: undefined,
+        project_worker_assignments: undefined,
       };
     });
 

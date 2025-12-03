@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { Document } from '@/models/profiles/document.model';
+import type { Document } from '@/types';
 
 export class DocumentQuery {
   static async getProfileDocuments(profileId: string): Promise<Document[]> {

@@ -5,10 +5,10 @@ export class SupabaseStorageProvider implements IStorageProvider {
   private client;
   private bucket: string;
 
-  constructor() {
+  constructor(bucketName?: string) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    this.bucket = process.env.SUPABASE_BUCKET || 'documents';
+    this.bucket = bucketName || process.env.SUPABASE_BUCKET || 'documents';
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Supabase credentials not configured');
@@ -18,12 +18,10 @@ export class SupabaseStorageProvider implements IStorageProvider {
   }
 
   async upload(file: Buffer, path: string, contentType?: string): Promise<string> {
-    const { error } = await this.client.storage
-      .from(this.bucket)
-      .upload(path, file, {
-        contentType,
-        upsert: true,
-      });
+    const { error } = await this.client.storage.from(this.bucket).upload(path, file, {
+      contentType,
+      upsert: true,
+    });
 
     if (error) throw new Error(`Supabase upload failed: ${error.message}`);
 

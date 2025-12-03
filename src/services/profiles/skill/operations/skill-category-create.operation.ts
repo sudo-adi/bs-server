@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { SkillCategory, CreateSkillCategoryDto } from '@/models/profiles/skill.model';
+import type { CreateSkillCategoryDto, SkillCategory } from '@/types';
 
 export class SkillCategoryCreateOperation {
   static async create(data: CreateSkillCategoryDto): Promise<SkillCategory> {

@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { BankAccount, CreateBankAccountDto } from '@/models/profiles/bankAccount.model';
+import type { BankAccount, CreateBankAccountDto } from '@/types';
 import { VerificationStatus } from '@/types/enums';
 
 export class BankAccountCreateOperation {

@@ -47,8 +47,8 @@ export const getAllRequirements = catchAsync(async (req: Request, res: Response)
   const { project_id, skill_category_id, limit, offset } = req.query;
 
   const filters = {
-    project_id: project_id ? parseInt(project_id as string) : undefined,
-    skill_category_id: skill_category_id ? parseInt(skill_category_id as string) : undefined,
+    project_id: project_id as string | undefined,
+    skill_category_id: skill_category_id as string | undefined,
     limit: limit ? parseInt(limit as string) : undefined,
     offset: offset ? parseInt(offset as string) : undefined,
   };
@@ -80,7 +80,7 @@ export const getSkillAllocationStatus = catchAsync(async (req: Request, res: Res
 
 // Get requirement by ID
 export const getRequirementById = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const includeDetails = req.query.include_details === 'true';
 
   const requirement = await projectResourceRequirementService.getRequirementById(
@@ -96,7 +96,7 @@ export const getRequirementById = catchAsync(async (req: Request, res: Response)
 
 // Update requirement
 export const updateRequirement = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const requirement = await projectResourceRequirementService.updateRequirement(id, req.body);
 
   res.status(200).json({
@@ -108,7 +108,7 @@ export const updateRequirement = catchAsync(async (req: Request, res: Response) 
 
 // Delete requirement
 export const deleteRequirement = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   await projectResourceRequirementService.deleteRequirement(id);
 
   res.status(200).json({

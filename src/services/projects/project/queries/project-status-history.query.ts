@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
-import type { ProjectStatusHistoryWithDocuments } from '@/types/project-status.types';
+import type { ProjectStatusHistoryWithDocuments } from '@/types';
 
 export interface StatusHistoryFilters {
   project_id?: string;

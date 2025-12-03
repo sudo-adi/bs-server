@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { ProfileSkill } from '@/models/profiles/skill.model';
+import type { ProfileSkill } from '@/types';
 
 export class ProfileSkillQuery {
   static async getProfileSkills(profileId: string): Promise<ProfileSkill[]> {

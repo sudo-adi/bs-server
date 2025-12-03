@@ -11,8 +11,6 @@ router.delete('/:id', projectRequestController.deleteRequirement);
 router.post('/:id/mark-reviewed', projectRequestController.markAsReviewed);
 router.post('/:id/approve', projectRequestController.approveRequest);
 router.post('/:id/reject', projectRequestController.rejectRequest);
-// TODO: Implement convertToProject
-// router.post('/:id/convert-to-project', projectRequestController.convertToProject);
 router.post('/:id/link-project', projectRequestController.linkToProject);
 
 export default router;

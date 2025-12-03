@@ -1,7 +1,9 @@
 import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { Interaction, UpdateInteractionDto } from '@/types/prisma.types';
+import type { UpdateInteractionDto } from '@/types';
+import type { Interaction } from '@/types/prisma.types';
+import { cleanUuid } from '@/utils/uuidHelper';
 
 export class InteractionUpdateOperation {
   static async update(id: string, data: UpdateInteractionDto): Promise<Interaction> {
@@ -16,7 +18,14 @@ export class InteractionUpdateOperation {
     const updateData: Prisma.interactionsUpdateInput = {};
 
     if (data.interaction_type_id !== undefined) {
-      updateData.interaction_types = { connect: { id: data.interaction_type_id } };
+      // Clean up interaction_type_id - convert empty strings to null for UUID fields
+      const typeId = cleanUuid(data.interaction_type_id);
+
+      if (typeId) {
+        updateData.interaction_types = { connect: { id: typeId } };
+      } else {
+        updateData.interaction_types = { disconnect: true };
+      }
     }
     if (data.subject !== undefined) updateData.subject = data.subject;
     if (data.description !== undefined) updateData.description = data.description;

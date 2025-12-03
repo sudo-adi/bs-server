@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import type { profiles } from '@/generated/prisma';
-import { ProfileWithDetails } from '@/models/profiles/profile.model';
+import { ProfileWithDetails } from '@/types';
 
 export class ProfileBaseQuery {
   /**
@@ -27,6 +27,9 @@ export class ProfileBaseQuery {
               orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
             },
             qualifications: {
+              include: {
+                qualification_types: true,
+              },
               orderBy: { created_at: 'desc' },
             },
             batch_enrollments: {
@@ -52,12 +55,12 @@ export class ProfileBaseQuery {
             stage_transitions: {
               orderBy: { transitioned_at: 'desc' },
             },
-            project_assignments: {
-              include: {
-                projects: true,
-              },
-              orderBy: { created_at: 'desc' },
-            },
+            // project_worker_assignments: {  // COMMENTED OUT - Will implement later
+            //   include: {
+            //     projects: true,
+            //   },
+            //   orderBy: { created_at: 'desc' },
+            // },
             profile_blacklist: {
               where: { is_active: true },
               orderBy: { blacklisted_at: 'desc' },

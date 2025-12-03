@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { Qualification, VerifyQualificationDto } from '@/models/profiles/qualification.model';
+import type { Qualification, VerifyQualificationDto } from '@/types';
 
 export class QualificationVerifyOperation {
   static async verify(id: string, data: VerifyQualificationDto): Promise<Qualification> {

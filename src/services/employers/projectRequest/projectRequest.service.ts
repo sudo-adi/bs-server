@@ -3,7 +3,7 @@ import {
   CreateProjectRequestDto,
   ReviewProjectRequestDto,
   UpdateProjectRequestDto,
-} from '@/models/employers/employer.model';
+} from '@/types';
 import { ProjectRequestCreateOperation } from './operations/project-request-create.operation';
 import { ProjectRequestDeleteOperation } from './operations/project-request-delete.operation';
 import { ProjectRequestReviewOperation } from './operations/project-request-review.operation';

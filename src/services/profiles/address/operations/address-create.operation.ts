@@ -1,5 +1,5 @@
 import prisma from '@/config/prisma';
-import type { Address, CreateAddressDto } from '@/types/prisma.types';
+import type { Address, CreateAddressDto } from '@/types';
 
 export class AddressCreateOperation {
   static async create(data: CreateAddressDto): Promise<Address> {

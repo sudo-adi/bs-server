@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { employerService } from '@/services/employers';
+import { notifyEmployerRejected, notifyEmployerVerified } from '@/services/notifications';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
 
@@ -75,9 +76,33 @@ export const updateEmployer = catchAsync(async (req: Request, res: Response) => 
 // Verify employer
 export const verifyEmployer = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
+  const { is_verified, notes } = req.body;
+
   const employer = await employerService.verifyEmployer(id, req.body);
 
   const { password_hash, ...employerData } = employer;
+
+  // Send notification based on verification status
+  try {
+    if (is_verified === true) {
+      await notifyEmployerVerified({
+        userId: employer.id,
+        email: employer.email,
+        companyName: employer.company_name,
+        companyCode: undefined,
+      });
+    } else if (is_verified === false) {
+      await notifyEmployerRejected({
+        userId: employer.id,
+        email: employer.email,
+        companyName: employer.company_name,
+        reason: notes,
+      });
+    }
+  } catch (error) {
+    // Don't throw - notification failure shouldn't break verification
+    console.error('Failed to send employer verification notification:', error);
+  }
 
   res.status(200).json({
     success: true,

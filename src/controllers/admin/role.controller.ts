@@ -3,11 +3,10 @@ import { Request, Response } from 'express';
 
 // Get all roles
 export const getAllRoles = async (req: Request, res: Response) => {
-  const { is_active, department, include_permissions } = req.query;
+  const { is_active, include_permissions } = req.query;
 
   const roles = await roleService.getAllRoles({
     is_active: is_active === 'true' ? true : is_active === 'false' ? false : undefined,
-    department: department as string,
     include_permissions: include_permissions === 'true',
   });
 
@@ -20,7 +19,7 @@ export const getAllRoles = async (req: Request, res: Response) => {
 
 // Get role by ID
 export const getRoleById = async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const { include_permissions } = req.query;
 
   const role = await roleService.getRoleById(id, include_permissions !== 'false');
@@ -41,17 +40,7 @@ export const getRoleById = async (req: Request, res: Response) => {
 
 // Create new role
 export const createRole = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
-
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-    });
-    return;
-  }
-
-  const role = await roleService.createRole(req.body, userId);
+  const role = await roleService.createRole(req.body);
 
   res.status(201).json({
     success: true,
@@ -62,7 +51,7 @@ export const createRole = async (req: Request, res: Response) => {
 
 // Update role
 export const updateRole = async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
 
   const role = await roleService.updateRole(id, req.body);
 
@@ -75,7 +64,7 @@ export const updateRole = async (req: Request, res: Response) => {
 
 // Delete role
 export const deleteRole = async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
 
   await roleService.deleteRole(id);
 
@@ -87,7 +76,7 @@ export const deleteRole = async (req: Request, res: Response) => {
 
 // Get users assigned to a role
 export const getRoleUsers = async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
 
   const users = await roleService.getRoleUsers(id);
 
@@ -95,51 +84,5 @@ export const getRoleUsers = async (req: Request, res: Response) => {
     success: true,
     count: users.length,
     data: users,
-  });
-};
-
-// Check user permission
-export const checkPermission = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
-  const { module, action } = req.body;
-
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-    });
-    return;
-  }
-
-  const hasPermission = await roleService.checkPermission(userId, module, action);
-
-  res.status(200).json({
-    success: true,
-    data: {
-      has_permission: hasPermission,
-    },
-  });
-};
-
-// Get current user's permissions
-export const getUserPermissions = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
-
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-    });
-    return;
-  }
-
-  const permissions = await roleService.getUserPermissions(userId);
-
-  res.status(200).json({
-    success: true,
-    data: {
-      user_id: userId,
-      permissions,
-    },
   });
 };

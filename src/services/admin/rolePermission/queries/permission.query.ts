@@ -10,19 +10,19 @@ export class PermissionQuery {
     const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
-        role: {
+        roles: {
           include: {
-            permissions: true,
+            role_permissions: true,
           },
         },
       },
     });
 
-    if (!user || !user.role || !user.role.is_active) {
+    if (!user || !user.roles || !user.roles.is_active) {
       return false;
     }
 
-    const permission = user.role.permissions?.find((p) => p.module_name === moduleName);
+    const permission = user.roles.role_permissions?.find((p) => p.module_name === moduleName);
 
     if (!permission) {
       return false;
@@ -50,34 +50,34 @@ export class PermissionQuery {
     const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
-        role: {
+        roles: {
           include: {
-            permissions: true,
+            role_permissions: true,
           },
         },
       },
     });
 
-    return (user?.role?.permissions as RolePermission[]) || [];
+    return (user?.roles?.role_permissions as RolePermission[]) || [];
   }
 
   static async isSuperAdmin(userId: string): Promise<boolean> {
     const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
-        role: {
+        roles: {
           include: {
-            permissions: true,
+            role_permissions: true,
           },
         },
       },
     });
 
-    if (!user || !user.role) {
+    if (!user || !user.roles) {
       return false;
     }
 
     // Check if any permission has super admin flag
-    return user.role.permissions?.some((p) => p.is_super_admin) || false;
+    return user.roles.role_permissions?.some((p) => p.is_super_admin) || false;
   }
 }

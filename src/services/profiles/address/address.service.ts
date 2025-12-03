@@ -1,4 +1,4 @@
-import type { Address, CreateAddressDto, UpdateAddressDto } from '@/types/prisma.types';
+import type { Address, CreateAddressDto, UpdateAddressDto } from '@/types';
 import { AddressCreateOperation } from './operations/address-create.operation';
 import { AddressDeleteOperation } from './operations/address-delete.operation';
 import { AddressUpdateOperation } from './operations/address-update.operation';

@@ -1,6 +1,6 @@
 import { env } from '@/config/env';
 import logger from '@/config/logger';
-import { CreateNewsUpdateDto, ScraperResult } from '@/models/utilities/newsUpdate.model';
+import { CreateNewsUpdateDto, ScraperResult } from '@/types';
 import newsUpdateService from '../../newsUpdate/newsUpdate.service';
 import { ScraperHelper } from '../helpers/scraper.helper';
 import { ArticleScraperOperation } from './article-scraper.operation';
@@ -65,10 +65,10 @@ export class ScraperRunnerOperation {
             continue;
           }
 
-          validProjects.push({
-            ...projectData,
-            source_url: url,
-          });
+          // validProjects.push({
+          //   ...projectData,
+          //   source_url: url,
+          // });
           result.total_valid_projects++;
 
           await ScraperHelper.delay(2000);

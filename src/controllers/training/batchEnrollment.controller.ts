@@ -37,10 +37,10 @@ export const bulkEnrollProfiles = catchAsync(async (req: Request, res: Response)
         notes,
       });
       enrollments.push(enrollment);
-    } catch (error: any) {
+    } catch (error: unknown) {
       errors.push({
         profile_id,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

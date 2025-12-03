@@ -13,7 +13,11 @@ export const getProfileBankAccounts = catchAsync(async (req: Request, res: Respo
 });
 
 export const addBankAccount = catchAsync(async (req: Request, res: Response) => {
-  const bankAccount = await bankAccountService.createBankAccount(req.body);
+  const profileId = req.params.id;
+  const bankAccount = await bankAccountService.createBankAccount({
+    ...req.body,
+    profile_id: profileId,
+  });
 
   res.status(201).json({
     success: true,

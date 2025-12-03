@@ -166,8 +166,15 @@ export const getWorkerTraining = catchAsync(async (req: Request, res: Response) 
           start_date: true,
           end_date: true,
           location: true,
-          trainer_name: true,
           status: true,
+          trainers: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
         },
       },
     },
@@ -197,6 +204,60 @@ export const getWorkerTraining = catchAsync(async (req: Request, res: Response) 
  * Get Worker Project Assignments
  * Returns current and past project deployments
  */
+// COMMENTED OUT - Will implement project assignments later with different approach
+// export const getWorkerProjects = catchAsync(async (req: Request, res: Response) => {
+//   const profileId = req.user?.profileId;
+
+//   if (!profileId) {
+//     throw new AppError('Authentication required', 401);
+//   }
+
+//   const assignments = await prisma.project_worker_assignments.findMany({
+//     where: { profile_id: profileId },
+//     include: {
+//       projects: {
+//         select: {
+//           id: true,
+//           name: true,
+//           code: true,
+//           location: true,
+//           start_date: true,
+//           end_date: true,
+//           status: true,
+//           employers: {
+//             select: {
+//               company_name: true,
+//               client_name: true,
+//             },
+//           },
+//         },
+//       },
+//     },
+//     orderBy: { deployment_date: 'desc' },
+//   });
+
+//   // Calculate project statistics
+//   const activeProjects = assignments.filter((a) => a.status === 'active').length;
+//   const completedProjects = assignments.filter((a) => a.status === 'completed').length;
+
+//   res.status(200).json({
+//     success: true,
+//     data: {
+//       total_projects: assignments.length,
+//       active_projects: activeProjects,
+//       completed_projects: completedProjects,
+//       assignments: assignments.map((assignment) => ({
+//         id: assignment.id,
+//         status: assignment.status,
+//         deployment_date: assignment.deployment_date,
+//         expected_end_date: assignment.expected_end_date,
+//         actual_end_date: assignment.actual_end_date,
+//         project: assignment.projects,
+//       })),
+//     },
+//   });
+// });
+
 export const getWorkerProjects = catchAsync(async (req: Request, res: Response) => {
   const profileId = req.user?.profileId;
 
@@ -204,48 +265,14 @@ export const getWorkerProjects = catchAsync(async (req: Request, res: Response) 
     throw new AppError('Authentication required', 401);
   }
 
-  const assignments = await prisma.project_assignments.findMany({
-    where: { profile_id: profileId },
-    include: {
-      projects: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          location: true,
-          start_date: true,
-          end_date: true,
-          status: true,
-          employers: {
-            select: {
-              company_name: true,
-              client_name: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { deployment_date: 'desc' },
-  });
-
-  // Calculate project statistics
-  const activeProjects = assignments.filter((a) => a.status === 'active').length;
-  const completedProjects = assignments.filter((a) => a.status === 'completed').length;
-
+  // Temporary implementation - returns empty data until project assignments feature is implemented
   res.status(200).json({
     success: true,
     data: {
-      total_projects: assignments.length,
-      active_projects: activeProjects,
-      completed_projects: completedProjects,
-      assignments: assignments.map((assignment) => ({
-        id: assignment.id,
-        status: assignment.status,
-        deployment_date: assignment.deployment_date,
-        expected_end_date: assignment.expected_end_date,
-        actual_end_date: assignment.actual_end_date,
-        project: assignment.projects,
-      })),
+      total_projects: 0,
+      active_projects: 0,
+      completed_projects: 0,
+      assignments: [],
     },
   });
 });
@@ -288,17 +315,21 @@ export const getWorkerDashboard = catchAsync(async (req: Request, res: Response)
     },
   });
 
-  // Get project stats
-  const projects = await prisma.project_assignments.count({
-    where: { profile_id: profileId },
-  });
+  // Get project stats - COMMENTED OUT until project assignments feature is implemented
+  // const projects = await prisma.project_worker_assignments.count({
+  //   where: { profile_id: profileId },
+  // });
 
-  const activeProjects = await prisma.project_assignments.count({
-    where: {
-      profile_id: profileId,
-      status: 'active',
-    },
-  });
+  // const activeProjects = await prisma.project_worker_assignments.count({
+  //   where: {
+  //     profile_id: profileId,
+  //     status: 'active',
+  //   },
+  // });
+
+  // Temporary - return 0 until feature is implemented
+  const projects = 0;
+  const activeProjects = 0;
 
   // Get current stage
   const currentStage = profile.stage_transitions[0]?.to_stage || 'new registration';

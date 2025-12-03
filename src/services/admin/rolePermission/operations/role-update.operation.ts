@@ -32,7 +32,7 @@ export class RoleUpdateOperation {
         is_active: input.is_active,
       },
       include: {
-        permissions: true,
+        role_permissions: true,
       },
     });
 

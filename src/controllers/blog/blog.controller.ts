@@ -1,6 +1,6 @@
+import { CreateBlogDto, UpdateBlogDto } from '@/types';
 import { Request, Response } from 'express';
 import blogService from '../../services/blog/blog.service';
-import { CreateBlogDTO, UpdateBlogDTO } from '../../types/blog.types';
 import { catchAsync } from '../../utils/catchAsync';
 
 export const createBlog = catchAsync(async (req: Request, res: Response) => {
@@ -12,7 +12,7 @@ export const createBlog = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const blogData: CreateBlogDTO = req.body;
+  const blogData: CreateBlogDto = req.body;
 
   const blog = await blogService.createBlog(userId, blogData);
 
@@ -80,7 +80,7 @@ export const getBlogById = catchAsync(async (req: Request, res: Response) => {
 
 export const updateBlog = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const updateData: UpdateBlogDTO = req.body;
+  const updateData: UpdateBlogDto = req.body;
 
   const blog = await blogService.updateBlog(id, updateData);
 

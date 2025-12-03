@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import type { Prisma } from '@/generated/prisma';
 import { Decimal } from '@/generated/prisma/runtime/library';
 import { AppError } from '@/middlewares/errorHandler';
-import type { ProjectWithDetails, UpdateProjectDto } from '@/types/prisma.types';
+import type { ProjectWithDetails, UpdateProjectDto } from '@/types';
 
 export class ProjectUpdateOperation {
   /**
@@ -26,38 +26,46 @@ export class ProjectUpdateOperation {
         // Handle financial data
         if (projectData.contract_value !== undefined) {
           financialUpdates.contract_value =
-            projectData.contract_value !== null ? new Decimal(projectData.contract_value) : null;
+            projectData.contract_value !== null && projectData.contract_value !== ''
+              ? new Decimal(projectData.contract_value)
+              : null;
           hasFinancialUpdates = true;
         }
         if (projectData.revised_contract_value !== undefined) {
           financialUpdates.revised_contract_value =
-            projectData.revised_contract_value !== null
+            projectData.revised_contract_value !== null &&
+            projectData.revised_contract_value !== ''
               ? new Decimal(projectData.revised_contract_value)
               : null;
           hasFinancialUpdates = true;
         }
         if (projectData.variation_order_value !== undefined) {
           financialUpdates.variation_order_value =
-            projectData.variation_order_value !== null
+            projectData.variation_order_value !== null &&
+            projectData.variation_order_value !== ''
               ? new Decimal(projectData.variation_order_value)
               : null;
           hasFinancialUpdates = true;
         }
         if (projectData.actual_cost_incurred !== undefined) {
           financialUpdates.actual_cost_incurred =
-            projectData.actual_cost_incurred !== null
+            projectData.actual_cost_incurred !== null && projectData.actual_cost_incurred !== ''
               ? new Decimal(projectData.actual_cost_incurred)
               : null;
           hasFinancialUpdates = true;
         }
         if (projectData.misc_cost !== undefined) {
           financialUpdates.misc_cost =
-            projectData.misc_cost !== null ? new Decimal(projectData.misc_cost) : null;
+            projectData.misc_cost !== null && projectData.misc_cost !== ''
+              ? new Decimal(projectData.misc_cost)
+              : null;
           hasFinancialUpdates = true;
         }
         if (projectData.budget !== undefined) {
           financialUpdates.budget =
-            projectData.budget !== null ? new Decimal(projectData.budget) : null;
+            projectData.budget !== null && projectData.budget !== ''
+              ? new Decimal(projectData.budget)
+              : null;
           hasFinancialUpdates = true;
         }
 
@@ -137,8 +145,8 @@ export class ProjectUpdateOperation {
             project_resource_requirements: {
               include: { skill_categories: true },
             },
-            project_assignments: {
-              orderBy: { deployment_date: 'desc' },
+            project_worker_assignments: {
+              orderBy: { deployed_date: 'desc' },
               include: { profiles: true },
             },
             project_requests: true,

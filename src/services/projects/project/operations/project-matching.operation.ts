@@ -1,8 +1,8 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import {
-  ProjectMatchedProfileStatus,
-  mapProjectMatchedProfileStatusToProfileStage,
+  ProjectWorkerAssignmentStatus,
+  mapProjectWorkerAssignmentStatusToProfileStage,
 } from '@/types/enums';
 
 export class ProjectMatchingOperation {
@@ -23,7 +23,7 @@ export class ProjectMatchingOperation {
     await prisma.$transaction(async (tx) => {
       await Promise.all(
         matchedProfiles.map((profile) =>
-          tx.project_matched_profiles.upsert({
+          tx.project_worker_assignments.upsert({
             where: {
               project_id_profile_id_skill_category_id: {
                 project_id: projectId,
@@ -35,18 +35,18 @@ export class ProjectMatchingOperation {
               project_id: projectId,
               profile_id: profile.profile_id,
               skill_category_id: profile.skill_category_id,
-              status: ProjectMatchedProfileStatus.MATCHED,
+              status: ProjectWorkerAssignmentStatus.MATCHED,
             },
             update: {
-              status: ProjectMatchedProfileStatus.MATCHED,
+              status: ProjectWorkerAssignmentStatus.MATCHED,
               updated_at: new Date(),
             },
           })
         )
       );
 
-      const newStage = mapProjectMatchedProfileStatusToProfileStage(
-        ProjectMatchedProfileStatus.MATCHED
+      const newStage = mapProjectWorkerAssignmentStatusToProfileStage(
+        ProjectWorkerAssignmentStatus.MATCHED
       );
 
       if (newStage) {
@@ -90,21 +90,21 @@ export class ProjectMatchingOperation {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const matchedProfiles = await tx.project_matched_profiles.findMany({
+      const matchedProfiles = await tx.project_worker_assignments.findMany({
         where: {
           project_id: projectId,
-          status: ProjectMatchedProfileStatus.MATCHED,
+          status: ProjectWorkerAssignmentStatus.MATCHED,
         },
         select: { profile_id: true },
       });
 
-      const updateResult = await tx.project_matched_profiles.updateMany({
+      const updateResult = await tx.project_worker_assignments.updateMany({
         where: {
           project_id: projectId,
-          status: ProjectMatchedProfileStatus.MATCHED,
+          status: ProjectWorkerAssignmentStatus.MATCHED,
         },
         data: {
-          status: ProjectMatchedProfileStatus.SHARED,
+          status: ProjectWorkerAssignmentStatus.SHARED,
           shared_at: new Date(),
           shared_by_user_id: userId,
         },
@@ -118,8 +118,8 @@ export class ProjectMatchingOperation {
         },
       });
 
-      const newStage = mapProjectMatchedProfileStatusToProfileStage(
-        ProjectMatchedProfileStatus.SHARED
+      const newStage = mapProjectWorkerAssignmentStatusToProfileStage(
+        ProjectWorkerAssignmentStatus.SHARED
       );
 
       if (newStage && matchedProfiles.length > 0) {
@@ -162,7 +162,7 @@ export class ProjectMatchingOperation {
     profileId: string,
     skillCategoryId: string
   ): Promise<any> {
-    const matchedProfile = await prisma.project_matched_profiles.findUnique({
+    const matchedProfile = await prisma.project_worker_assignments.findUnique({
       where: {
         project_id_profile_id_skill_category_id: {
           project_id: projectId,
@@ -176,14 +176,14 @@ export class ProjectMatchingOperation {
       throw new AppError('Matched profile not found', 404);
     }
 
-    if (matchedProfile.status !== ProjectMatchedProfileStatus.SHARED) {
+    if (matchedProfile.status !== ProjectWorkerAssignmentStatus.SHARED) {
       throw new AppError(
         `Cannot onboard profile with status '${matchedProfile.status}'. Must be 'shared'`,
         400
       );
     }
 
-    await prisma.project_matched_profiles.delete({
+    await prisma.project_worker_assignments.delete({
       where: {
         project_id_profile_id_skill_category_id: {
           project_id: projectId,

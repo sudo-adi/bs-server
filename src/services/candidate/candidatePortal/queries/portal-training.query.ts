@@ -12,7 +12,9 @@ export class PortalTrainingQuery {
       },
       include: {
         training_batches: {
-          include: {},
+          include: {
+            trainers: true,
+          },
         },
         users: {
           select: {
@@ -76,7 +78,7 @@ export class PortalTrainingQuery {
           name: enrollment.training_batches?.name,
           program_name: enrollment.training_batches?.program_name,
           provider: enrollment.training_batches?.provider,
-          trainer_name: enrollment.training_batches?.trainer_name,
+          trainer_name: enrollment.training_batches?.trainers?.name,
           start_date: enrollment.training_batches?.start_date,
           end_date: enrollment.training_batches?.end_date,
           duration_days: enrollment.training_batches?.duration_days,

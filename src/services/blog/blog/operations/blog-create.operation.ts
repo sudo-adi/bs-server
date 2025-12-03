@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from '@/config/prisma';
-import { CreateBlogDTO } from '@/types/blog.types';
+import { CreateBlogDto } from '@/types';
 
 export class BlogCreateOperation {
   /**
    * Create a new blog post
    */
-  static async create(userId: string, data: CreateBlogDTO) {
+  static async create(userId: string, data: CreateBlogDto) {
     const blog = await prisma.blogs.create({
       data: {
         title: data.title,

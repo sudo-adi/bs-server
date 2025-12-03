@@ -1,7 +1,7 @@
 import { env } from '@/config/env';
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { Employer, EmployerLoginDto } from '@/models/employers/employer.model';
+import { Employer, EmployerLoginDto } from '@/types';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 

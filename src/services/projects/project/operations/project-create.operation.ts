@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import { Decimal } from '@/generated/prisma/runtime/library';
 import { AppError } from '@/middlewares/errorHandler';
 import { ProjectStatus } from '@/types/enums';
-import type { CreateProjectDto, ProjectWithDetails } from '@/types/prisma.types';
+import type { CreateProjectDto, ProjectWithDetails } from '@/types';
 
 export class ProjectCreateOperation {
   /**
@@ -59,26 +59,33 @@ export class ProjectCreateOperation {
               is_active: projectData.is_active !== undefined ? projectData.is_active : true,
               is_accommodation_provided: projectData.is_accommodation_provided || false,
               project_financials:
-                contract_value ||
-                revised_contract_value ||
-                variation_order_value ||
-                actual_cost_incurred ||
-                misc_cost ||
-                budget
+                (contract_value && contract_value !== '') ||
+                (revised_contract_value && revised_contract_value !== '') ||
+                (variation_order_value && variation_order_value !== '') ||
+                (actual_cost_incurred && actual_cost_incurred !== '') ||
+                (misc_cost && misc_cost !== '') ||
+                (budget && budget !== '')
                   ? {
                       create: {
-                        contract_value: contract_value ? new Decimal(contract_value) : null,
-                        revised_contract_value: revised_contract_value
-                          ? new Decimal(revised_contract_value)
-                          : null,
-                        variation_order_value: variation_order_value
-                          ? new Decimal(variation_order_value)
-                          : null,
-                        actual_cost_incurred: actual_cost_incurred
-                          ? new Decimal(actual_cost_incurred)
-                          : null,
-                        misc_cost: misc_cost ? new Decimal(misc_cost) : null,
-                        budget: budget ? new Decimal(budget) : null,
+                        contract_value:
+                          contract_value && contract_value !== ''
+                            ? new Decimal(contract_value)
+                            : null,
+                        revised_contract_value:
+                          revised_contract_value && revised_contract_value !== ''
+                            ? new Decimal(revised_contract_value)
+                            : null,
+                        variation_order_value:
+                          variation_order_value && variation_order_value !== ''
+                            ? new Decimal(variation_order_value)
+                            : null,
+                        actual_cost_incurred:
+                          actual_cost_incurred && actual_cost_incurred !== ''
+                            ? new Decimal(actual_cost_incurred)
+                            : null,
+                        misc_cost:
+                          misc_cost && misc_cost !== '' ? new Decimal(misc_cost) : null,
+                        budget: budget && budget !== '' ? new Decimal(budget) : null,
                       },
                     }
                   : undefined,

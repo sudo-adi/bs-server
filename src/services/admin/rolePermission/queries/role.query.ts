@@ -5,7 +5,7 @@ export class RoleQuery {
   static async getAllRoles(): Promise<Role[]> {
     const roles = await prisma.roles.findMany({
       include: {
-        permissions: true,
+        role_permissions: true,
       },
       orderBy: {
         created_at: 'desc',
@@ -20,7 +20,7 @@ export class RoleQuery {
         is_active: true,
       },
       include: {
-        permissions: true,
+        role_permissions: true,
       },
       orderBy: {
         name: 'asc',
@@ -33,7 +33,7 @@ export class RoleQuery {
     const role = await prisma.roles.findUnique({
       where: { id },
       include: {
-        permissions: true,
+        role_permissions: true,
       },
     });
     return role as Role | null;
@@ -43,7 +43,7 @@ export class RoleQuery {
     const role = await prisma.roles.findUnique({
       where: { name },
       include: {
-        permissions: true,
+        role_permissions: true,
       },
     });
     return role as Role | null;

@@ -3,7 +3,7 @@ import {
   BatchEnrollmentWithDetails,
   CreateBatchEnrollmentDto,
   UpdateBatchEnrollmentDto,
-} from '@/models/training/batchEnrollment.model';
+} from '@/types';
 import { BatchEnrollmentCreateOperation } from './operations/batch-enrollment-create.operation';
 import { BatchEnrollmentDeleteOperation } from './operations/batch-enrollment-delete.operation';
 import { BatchEnrollmentUpdateOperation } from './operations/batch-enrollment-update.operation';

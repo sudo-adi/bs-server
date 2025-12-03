@@ -2,7 +2,7 @@ import prisma from '@/config/prisma';
 import type { profiles } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import { ProfileStage } from '@/types/enums';
-import type { CreateProfileDto } from '@/types/prisma.types';
+import type { CreateProfileDto } from '@/types';
 import { sanitizeObject } from '@/utils/sanitize';
 import { ProfileCodeHelper } from '../helpers/profile-code.helper';
 
@@ -11,9 +11,7 @@ export class ProfileCreateOperation {
    * Create a new profile
    */
   static async create(data: CreateProfileDto): Promise<profiles> {
-    // Sanitize all string inputs to prevent XSS
     const sanitizedData = sanitizeObject(data);
-
     // Check if mobile number already exists
     const existingProfile = await prisma.profiles.findFirst({
       where: {
@@ -27,7 +25,7 @@ export class ProfileCreateOperation {
     }
 
     // Generate profile code
-    const profileCode = sanitizedData.candidate_code || (await ProfileCodeHelper.generate());
+    const profileCode = await ProfileCodeHelper.generate();
 
     // Determine initial stage - default to 'new_registration'
     const initialStage = ProfileStage.NEW_REGISTRATION;
@@ -48,7 +46,7 @@ export class ProfileCreateOperation {
           gender: sanitizedData.gender,
           date_of_birth: sanitizedData.date_of_birth,
           profile_photo_url: sanitizedData.profile_photo_url,
-          is_active: sanitizedData.is_active !== false,
+          is_active: true, // Default to active
         },
       });
 

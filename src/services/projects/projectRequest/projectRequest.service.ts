@@ -3,7 +3,7 @@ import {
   EmployerProjectRequirement,
   EmployerProjectRequirementWithDetails,
   UpdateEmployerProjectRequirementDto,
-} from '@/models/projects/projectRequest.model';
+} from '@/types';
 import { ProjectRequestCreateOperation } from './operations/request-create.operation';
 import { ProjectRequestDeleteOperation } from './operations/request-delete.operation';
 import { ProjectRequestReviewOperation } from './operations/request-review.operation';
@@ -12,7 +12,7 @@ import { ProjectRequestQuery } from './queries/project-request.query';
 
 export class ProjectRequestService {
   async getAllRequirements(filters?: {
-    employer_id?: number;
+    employer_id?: string;
     status?: string;
     limit?: number;
     offset?: number;
@@ -21,7 +21,7 @@ export class ProjectRequestService {
   }
 
   async getRequirementById(
-    id: number,
+    id: string,
     includeDetails = false
   ): Promise<EmployerProjectRequirementWithDetails> {
     return await ProjectRequestQuery.getRequirementById(id, includeDetails);
@@ -34,21 +34,21 @@ export class ProjectRequestService {
   }
 
   async updateRequirement(
-    id: number,
+    id: string,
     data: UpdateEmployerProjectRequirementDto
   ): Promise<EmployerProjectRequirement> {
     return await ProjectRequestUpdateOperation.update(id, data);
   }
 
-  async deleteRequirement(id: number): Promise<void> {
+  async deleteRequirement(id: string): Promise<void> {
     return await ProjectRequestDeleteOperation.delete(id);
   }
 
-  async markAsReviewed(id: number, reviewedByUserId: number): Promise<EmployerProjectRequirement> {
+  async markAsReviewed(id: string, reviewedByUserId: string): Promise<EmployerProjectRequirement> {
     return await ProjectRequestReviewOperation.markAsReviewed(id, reviewedByUserId);
   }
 
-  async linkToProject(id: number, projectId: number): Promise<EmployerProjectRequirement> {
+  async linkToProject(id: string, projectId: string): Promise<EmployerProjectRequirement> {
     return await ProjectRequestReviewOperation.linkToProject(id, projectId);
   }
 

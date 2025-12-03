@@ -1,6 +1,6 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { Employer, VerifyEmployerDto } from '@/models/employers/employer.model';
+import { Employer, VerifyEmployerDto } from '@/types';
 
 export class EmployerVerifyOperation {
   static async verify(id: string, data: VerifyEmployerDto): Promise<Employer> {

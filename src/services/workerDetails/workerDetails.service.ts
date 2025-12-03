@@ -37,7 +37,7 @@ class WorkerDetailsService {
     return await prisma.users.findUnique({
       where: { email },
       include: {
-        role: true,
+        roles: true,
       },
     });
   }
@@ -46,26 +46,27 @@ class WorkerDetailsService {
   async generateWorkerToken(profileId: string) {
     const profile = await prisma.profiles.findUnique({
       where: { id: profileId },
-      include: {
-        project_assignments: {
-          where: {
-            status: {
-              in: ['allocated', 'active'],
-            },
-          },
-          include: {
-            projects: {
-              include: {
-                employers: true,
-              },
-            },
-          },
-          orderBy: {
-            deployment_date: 'desc',
-          },
-          take: 1,
-        },
-      },
+      // COMMENTED OUT - Will implement project assignments later with different approach
+      // include: {
+      //   project_worker_assignments: {
+      //     where: {
+      //       status: {
+      //         in: ['allocated', 'active'],
+      //       },
+      //     },
+      //     include: {
+      //       projects: {
+      //         include: {
+      //           employers: true,
+      //         },
+      //       },
+      //     },
+      //     orderBy: {
+      //       deployment_date: 'desc',
+      //     },
+      //     take: 1,
+      //   },
+      // },
     });
 
     if (!profile) {
@@ -82,7 +83,8 @@ class WorkerDetailsService {
       { expiresIn: '30d' }
     );
 
-    const currentAssignment = profile.project_assignments[0];
+    // COMMENTED OUT - Will implement project assignments later
+    // const currentAssignment = profile.project_worker_assignments[0];
 
     return {
       token,
@@ -91,16 +93,17 @@ class WorkerDetailsService {
         candidate_code: profile.candidate_code,
         name: `${profile.first_name} ${profile.last_name || ''}`.trim(),
         phone: profile.phone,
-        current_assignment:
-          currentAssignment && currentAssignment.projects
-            ? {
-                project_name: currentAssignment.projects.name,
-                project_code: currentAssignment.projects.code,
-                employer_name: currentAssignment.projects.employers?.company_name,
-                status: currentAssignment.status,
-                deployment_date: currentAssignment.deployment_date,
-              }
-            : null,
+        current_assignment: null, // Temporary - will be implemented later
+        // current_assignment:
+        //   currentAssignment && currentAssignment.projects
+        //     ? {
+        //         project_name: currentAssignment.projects.name,
+        //         project_code: currentAssignment.projects.code,
+        //         employer_name: currentAssignment.projects.employers?.company_name,
+        //         status: currentAssignment.status,
+        //         deployment_date: currentAssignment.deployment_date,
+        //       }
+        //     : null,
       },
     };
   }
@@ -226,18 +229,19 @@ class WorkerDetailsService {
             skill_categories: true,
           },
         },
-        project_assignments: {
-          include: {
-            projects: {
-              include: {
-                employers: true,
-              },
-            },
-          },
-          orderBy: {
-            deployment_date: 'desc',
-          },
-        },
+        // COMMENTED OUT - Will implement project assignments later with different approach
+        // project_worker_assignments: {
+        //   include: {
+        //     projects: {
+        //       include: {
+        //         employers: true,
+        //       },
+        //     },
+        //   },
+        //   orderBy: {
+        //     deployment_date: 'desc',
+        //   },
+        // },
         batch_enrollments: {
           include: {
             training_batches: true,
@@ -267,9 +271,10 @@ class WorkerDetailsService {
       return null;
     }
 
-    const currentAssignment = profile.project_assignments.find(
-      (pa: any) => pa.status === 'allocated' || pa.status === 'active'
-    );
+    // COMMENTED OUT - Will implement project assignments later
+    // const currentAssignment = profile.project_worker_assignments.find(
+    //   (pa: any) => pa.status === 'allocated' || pa.status === 'active'
+    // );
 
     // Calculate age from date of birth
     let age = null;
@@ -285,7 +290,11 @@ class WorkerDetailsService {
 
     // Construct full URL for profile photo if it's a relative path
     let profilePhotoUrl = profile.profile_photo_url;
-    if (profilePhotoUrl && !profilePhotoUrl.startsWith('http://') && !profilePhotoUrl.startsWith('https://')) {
+    if (
+      profilePhotoUrl &&
+      !profilePhotoUrl.startsWith('http://') &&
+      !profilePhotoUrl.startsWith('https://')
+    ) {
       profilePhotoUrl = `${env.BASE_URL || 'http://localhost:3000'}${profilePhotoUrl.startsWith('/') ? '' : '/'}${profilePhotoUrl}`;
     }
 
@@ -318,21 +327,23 @@ class WorkerDetailsService {
         is_primary: ps.is_primary,
       })),
       batch_enrollments: profile.batch_enrollments,
-      current_assignment:
-        currentAssignment && currentAssignment.projects
-          ? {
-              id: currentAssignment.id,
-              project_id: currentAssignment.project_id,
-              project_name: currentAssignment.projects.name,
-              project_code: currentAssignment.projects.code,
-              employer_name: currentAssignment.projects.employers?.company_name,
-              employer_code: currentAssignment.projects.employers?.employer_code,
-              status: currentAssignment.status,
-              deployment_date: currentAssignment.deployment_date,
-              expected_end_date: currentAssignment.expected_end_date,
-            }
-          : null,
-      all_assignments: profile.project_assignments,
+      current_assignment: null, // Temporary - will be implemented later
+      // current_assignment:
+      //   currentAssignment && currentAssignment.projects
+      //     ? {
+      //         id: currentAssignment.id,
+      //         project_id: currentAssignment.project_id,
+      //         project_name: currentAssignment.projects.name,
+      //         project_code: currentAssignment.projects.code,
+      //         employer_name: currentAssignment.projects.employers?.company_name,
+      //         employer_code: currentAssignment.projects.employers?.employer_code,
+      //         status: currentAssignment.status,
+      //         deployment_date: currentAssignment.deployment_date,
+      //         expected_end_date: currentAssignment.expected_end_date,
+      //       }
+      //     : null,
+      all_assignments: [], // Temporary - will be implemented later
+      // all_assignments: profile.project_worker_assignments,
       government_ids: {
         esic_number: profile.esic_number,
         uan_number: profile.uan_number,
@@ -356,21 +367,22 @@ class WorkerDetailsService {
     const profile = await prisma.profiles.findUnique({
       where: { id: profileId },
       include: {
-        project_matched_profiles: {
-          where: {
-            status: 'shared', // Only show if status is 'shared' with employer
-          },
-          include: {
-            projects: {
-              include: {
-                employers: true,
-              },
-            },
-          },
-          orderBy: {
-            created_at: 'desc',
-          },
-        },
+        // COMMENTED OUT - Will implement project assignments later with different approach
+        // project_worker_assignments: {
+        //   where: {
+        //     status: 'shared', // Only show if status is 'shared' with employer
+        //   },
+        //   include: {
+        //     projects: {
+        //       include: {
+        //         employers: true,
+        //       },
+        //     },
+        //   },
+        //   orderBy: {
+        //     created_at: 'desc',
+        //   },
+        // },
         profile_skills: {
           include: {
             skill_categories: true,
@@ -383,56 +395,61 @@ class WorkerDetailsService {
       return null;
     }
 
-    // Filter matched profiles to only show employer's projects with 'shared' status
-    const employerSharedProfiles = profile.project_matched_profiles.filter(
-      (matched: any) => matched.projects?.employer_id === employerId && matched.status === 'shared'
-    );
+    // COMMENTED OUT - Will implement project assignments later
+    // // Filter matched profiles to only show employer's projects with 'shared' status
+    // const employerSharedProfiles = profile.project_worker_assignments.filter(
+    //   (matched: any) => matched.projects?.employer_id === employerId && matched.status === 'shared'
+    // );
 
-    // Check if worker profile is shared with this employer
-    if (!employerSharedProfiles || employerSharedProfiles.length === 0) {
-      return null;
-    }
+    // // Check if worker profile is shared with this employer
+    // if (!employerSharedProfiles || employerSharedProfiles.length === 0) {
+    //   return null;
+    // }
 
-    const sharedProfile = employerSharedProfiles[0];
+    // const sharedProfile = employerSharedProfiles[0];
 
-    // Calculate age from date of birth
-    let age = null;
-    if (profile.date_of_birth) {
-      const today = new Date();
-      const birthDate = new Date(profile.date_of_birth);
-      age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-    }
+    // Temporary - return null until feature is implemented (no sharing yet)
+    return null;
 
-    // Construct full URL for profile photo if it's a relative path
-    let profilePhotoUrl = profile.profile_photo_url;
-    if (profilePhotoUrl && !profilePhotoUrl.startsWith('http://') && !profilePhotoUrl.startsWith('https://')) {
-      profilePhotoUrl = `${env.BASE_URL || 'http://localhost:3000'}${profilePhotoUrl.startsWith('/') ? '' : '/'}${profilePhotoUrl}`;
-    }
+    // COMMENTED OUT - unreachable code, will be implemented later
+    // // Calculate age from date of birth
+    // let age = null;
+    // if (profile.date_of_birth) {
+    //   const today = new Date();
+    //   const birthDate = new Date(profile.date_of_birth);
+    //   age = today.getFullYear() - birthDate.getFullYear();
+    //   const monthDiff = today.getMonth() - birthDate.getMonth();
+    //   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    //     age--;
+    //   }
+    // }
 
-    return {
-      worker_code: profile.candidate_code,
-      name: `${profile.first_name} ${profile.last_name || ''}`.trim(),
-      profile_photo: profilePhotoUrl,
-      gender: profile.gender,
-      age: age,
-      current_project: sharedProfile.projects
-        ? {
-            project_name: sharedProfile.projects.name,
-            project_code: sharedProfile.projects.code,
-          }
-        : null,
-      skills: profile.profile_skills.map((ps: any) => ({
-        skill_name: ps.skill_categories?.name,
-        years_of_experience: ps.years_of_experience,
-        is_primary: ps.is_primary,
-      })),
-      // NO sensitive data: no phone, no documents, no bank details, no government IDs
-      // Only shows workers who have been explicitly SHARED with this employer
-    };
+    // // Construct full URL for profile photo if it's a relative path
+    // let profilePhotoUrl = profile.profile_photo_url;
+    // if (profilePhotoUrl && !profilePhotoUrl.startsWith('http://') && !profilePhotoUrl.startsWith('https://')) {
+    //   profilePhotoUrl = `${env.BASE_URL || 'http://localhost:3000'}${profilePhotoUrl.startsWith('/') ? '' : '/'}${profilePhotoUrl}`;
+    // }
+
+    // return {
+    //   worker_code: profile.candidate_code,
+    //   name: `${profile.first_name} ${profile.last_name || ''}`.trim(),
+    //   profile_photo: profilePhotoUrl,
+    //   gender: profile.gender,
+    //   age: age,
+    //   current_project: sharedProfile.projects
+    //     ? {
+    //         project_name: sharedProfile.projects.name,
+    //         project_code: sharedProfile.projects.code,
+    //       }
+    //     : null,
+    //   skills: profile.profile_skills.map((ps: any) => ({
+    //     skill_name: ps.skill_categories?.name,
+    //     years_of_experience: ps.years_of_experience,
+    //     is_primary: ps.is_primary,
+    //   })),
+    //   // NO sensitive data: no phone, no documents, no bank details, no government IDs
+    //   // Only shows workers who have been explicitly SHARED with this employer
+    // };
   }
 
   // Get worker's own info (limited)
@@ -444,36 +461,42 @@ class WorkerDetailsService {
 
     const profile = await prisma.profiles.findUnique({
       where: { id: requestedProfileId },
-      include: {
-        project_assignments: {
-          where: {
-            status: {
-              in: ['allocated', 'active'],
-            },
-          },
-          include: {
-            projects: {
-              include: {
-                employers: true,
-              },
-            },
-          },
-          orderBy: {
-            deployment_date: 'desc',
-          },
-        },
-      },
+      // COMMENTED OUT - Will implement project assignments later with different approach
+      // include: {
+      //   project_worker_assignments: {
+      //     where: {
+      //       status: {
+      //         in: ['allocated', 'active'],
+      //       },
+      //     },
+      //     include: {
+      //       projects: {
+      //         include: {
+      //           employers: true,
+      //         },
+      //       },
+      //     },
+      //     orderBy: {
+      //       deployment_date: 'desc',
+      //     },
+      //   },
+      // },
     });
 
     if (!profile) {
       return null;
     }
 
-    const currentAssignment = profile.project_assignments[0];
+    // COMMENTED OUT - Will implement project assignments later
+    // const currentAssignment = profile.project_worker_assignments[0];
 
     // Construct full URL for profile photo if it's a relative path
     let profilePhotoUrl = profile.profile_photo_url;
-    if (profilePhotoUrl && !profilePhotoUrl.startsWith('http://') && !profilePhotoUrl.startsWith('https://')) {
+    if (
+      profilePhotoUrl &&
+      !profilePhotoUrl.startsWith('http://') &&
+      !profilePhotoUrl.startsWith('https://')
+    ) {
       profilePhotoUrl = `${env.BASE_URL || 'http://localhost:3000'}${profilePhotoUrl.startsWith('/') ? '' : '/'}${profilePhotoUrl}`;
     }
 
@@ -483,16 +506,17 @@ class WorkerDetailsService {
       profile_photo: profilePhotoUrl,
       phone: profile.phone,
       email: profile.email,
-      current_assignment:
-        currentAssignment && currentAssignment.projects
-          ? {
-              project_name: currentAssignment.projects.name,
-              project_code: currentAssignment.projects.code,
-              employer_name: currentAssignment.projects.employers?.company_name,
-              status: currentAssignment.status,
-              deployment_date: currentAssignment.deployment_date,
-            }
-          : null,
+      current_assignment: null, // Temporary - will be implemented later
+      // current_assignment:
+      //   currentAssignment && currentAssignment.projects
+      //     ? {
+      //         project_name: currentAssignment.projects.name,
+      //         project_code: currentAssignment.projects.code,
+      //         employer_name: currentAssignment.projects.employers?.company_name,
+      //         status: currentAssignment.status,
+      //         deployment_date: currentAssignment.deployment_date,
+      //       }
+      //     : null,
     };
   }
 
@@ -500,36 +524,42 @@ class WorkerDetailsService {
   async getWorkerInfoByProfileId(profileId: string) {
     const profile = await prisma.profiles.findUnique({
       where: { id: profileId },
-      include: {
-        project_assignments: {
-          where: {
-            status: {
-              in: ['allocated', 'active'],
-            },
-          },
-          include: {
-            projects: {
-              include: {
-                employers: true,
-              },
-            },
-          },
-          orderBy: {
-            deployment_date: 'desc',
-          },
-        },
-      },
+      // COMMENTED OUT - Will implement project assignments later with different approach
+      // include: {
+      //   project_worker_assignments: {
+      //     where: {
+      //       status: {
+      //         in: ['allocated', 'active'],
+      //       },
+      //     },
+      //     include: {
+      //       projects: {
+      //         include: {
+      //           employers: true,
+      //         },
+      //       },
+      //     },
+      //     orderBy: {
+      //       deployment_date: 'desc',
+      //     },
+      //   },
+      // },
     });
 
     if (!profile) {
       return null;
     }
 
-    const currentAssignment = profile.project_assignments[0];
+    // COMMENTED OUT - Will implement project assignments later
+    // const currentAssignment = profile.project_worker_assignments[0];
 
     // Construct full URL for profile photo if it's a relative path
     let profilePhotoUrl = profile.profile_photo_url;
-    if (profilePhotoUrl && !profilePhotoUrl.startsWith('http://') && !profilePhotoUrl.startsWith('https://')) {
+    if (
+      profilePhotoUrl &&
+      !profilePhotoUrl.startsWith('http://') &&
+      !profilePhotoUrl.startsWith('https://')
+    ) {
       profilePhotoUrl = `${env.BASE_URL || 'http://localhost:3000'}${profilePhotoUrl.startsWith('/') ? '' : '/'}${profilePhotoUrl}`;
     }
 
@@ -539,16 +569,17 @@ class WorkerDetailsService {
       profile_photo: profilePhotoUrl,
       phone: profile.phone,
       email: profile.email,
-      current_assignment:
-        currentAssignment && currentAssignment.projects
-          ? {
-              project_name: currentAssignment.projects.name,
-              project_code: currentAssignment.projects.code,
-              employer_name: currentAssignment.projects.employers?.company_name,
-              status: currentAssignment.status,
-              deployment_date: currentAssignment.deployment_date,
-            }
-          : null,
+      current_assignment: null, // Temporary - will be implemented later
+      // current_assignment:
+      //   currentAssignment && currentAssignment.projects
+      //     ? {
+      //         project_name: currentAssignment.projects.name,
+      //         project_code: currentAssignment.projects.code,
+      //         employer_name: currentAssignment.projects.employers?.company_name,
+      //         status: currentAssignment.status,
+      //         deployment_date: currentAssignment.deployment_date,
+      //       }
+      //     : null,
     };
   }
 }

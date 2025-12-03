@@ -18,7 +18,7 @@ export const getAllRequirements = catchAsync(async (req: Request, res: Response)
   const { employer_id, status, limit, offset } = req.query;
 
   const filters = {
-    employer_id: employer_id ? parseInt(employer_id as string) : undefined,
+    employer_id: employer_id as string | undefined,
     status: status as string,
     limit: limit ? parseInt(limit as string) : undefined,
     offset: offset ? parseInt(offset as string) : undefined,
@@ -39,7 +39,7 @@ export const getAllRequirements = catchAsync(async (req: Request, res: Response)
 
 // Get requirement by ID
 export const getRequirementById = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const includeDetails = req.query.include_details === 'true';
 
   const requirement = await projectRequestService.getRequirementById(id, includeDetails);
@@ -52,7 +52,7 @@ export const getRequirementById = catchAsync(async (req: Request, res: Response)
 
 // Update requirement
 export const updateRequirement = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const requirement = await projectRequestService.updateRequirement(id, req.body);
 
   res.status(200).json({
@@ -64,7 +64,7 @@ export const updateRequirement = catchAsync(async (req: Request, res: Response) 
 
 // Delete requirement
 export const deleteRequirement = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   await projectRequestService.deleteRequirement(id);
 
   res.status(200).json({
@@ -75,7 +75,7 @@ export const deleteRequirement = catchAsync(async (req: Request, res: Response) 
 
 // Mark requirement as reviewed
 export const markAsReviewed = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const { reviewed_by_user_id } = req.body;
 
   const requirement = await projectRequestService.markAsReviewed(id, reviewed_by_user_id);
@@ -89,7 +89,7 @@ export const markAsReviewed = catchAsync(async (req: Request, res: Response) => 
 
 // Link requirement to created project
 export const linkToProject = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const { project_id } = req.body;
 
   const requirement = await projectRequestService.linkToProject(id, project_id);

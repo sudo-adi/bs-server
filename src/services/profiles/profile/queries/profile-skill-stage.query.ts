@@ -52,11 +52,9 @@ export class ProfileSkillStageQuery {
     const profiles: any = await prisma.$queryRawUnsafe(`
       SELECT
         p.*,
-        latest_stage.to_stage as current_stage,
         CASE WHEN pb.id IS NOT NULL THEN true ELSE false END as is_blacklisted,
         current_assignment.project_name as current_project_name,
-        current_assignment.deployment_date as current_deployment_start_date,
-        COALESCE(current_assignment.actual_end_date, current_assignment.expected_end_date) as current_deployment_end_date,
+        current_assignment.created_at as current_assignment_date,
         current_training.batch_enrollment_id,
         current_training.batch_id,
         current_training.batch_name,
@@ -74,6 +72,7 @@ export class ProfileSkillStageQuery {
           ELSE NULL
         END as training_days_left
       FROM profiles p
+      INNER JOIN profile_skills ps ON ps.profile_id = p.id AND ps.skill_category_id = '${skillCategoryId}'::uuid
       INNER JOIN LATERAL (
         SELECT to_stage
         FROM stage_transitions
@@ -81,7 +80,6 @@ export class ProfileSkillStageQuery {
         ORDER BY transitioned_at DESC
         LIMIT 1
       ) latest_stage ON true
-      INNER JOIN profile_skills ps ON ps.profile_id = p.id AND ps.skill_category_id = '${skillCategoryId}'::uuid
       LEFT JOIN LATERAL (
         SELECT id
         FROM profile_blacklist
@@ -89,11 +87,11 @@ export class ProfileSkillStageQuery {
         LIMIT 1
       ) pb ON true
       LEFT JOIN LATERAL (
-        SELECT proj.name as project_name, pa.deployment_date, pa.actual_end_date, pa.expected_end_date
-        FROM project_assignments pa
+        SELECT proj.name as project_name, pa.created_at
+        FROM project_worker_assignments pa
         JOIN projects proj ON proj.id = pa.project_id
-        WHERE pa.profile_id = p.id AND pa.status = 'deployed'
-        ORDER BY pa.deployment_date DESC
+        WHERE pa.profile_id = p.id
+        ORDER BY pa.created_at DESC
         LIMIT 1
       ) current_assignment ON true
       LEFT JOIN LATERAL (
@@ -102,7 +100,7 @@ export class ProfileSkillStageQuery {
           tb.id as batch_id,
           tb.name as batch_name,
           tb.code as batch_code,
-          tb.trainer_name,
+          t.name as trainer_name,
           tb.start_date,
           tb.end_date,
           tb.status as training_status,
@@ -111,6 +109,7 @@ export class ProfileSkillStageQuery {
           be.status as enrollment_status
         FROM batch_enrollments be
         JOIN training_batches tb ON tb.id = be.batch_id
+        LEFT JOIN trainers t ON t.id = tb.trainer_id
         WHERE be.profile_id = p.id AND be.status IN ('enrolled', 'in_progress')
         ORDER BY be.enrollment_date DESC
         LIMIT 1
@@ -124,6 +123,7 @@ export class ProfileSkillStageQuery {
     const countResult: any = await prisma.$queryRawUnsafe(`
       SELECT COUNT(*)::int as count
       FROM profiles p
+      INNER JOIN profile_skills ps ON ps.profile_id = p.id AND ps.skill_category_id = '${skillCategoryId}'::uuid
       INNER JOIN LATERAL (
         SELECT to_stage
         FROM stage_transitions
@@ -131,7 +131,6 @@ export class ProfileSkillStageQuery {
         ORDER BY transitioned_at DESC
         LIMIT 1
       ) latest_stage ON true
-      INNER JOIN profile_skills ps ON ps.profile_id = p.id AND ps.skill_category_id = '${skillCategoryId}'::uuid
       WHERE ${whereConditions}
         AND latest_stage.to_stage = '${stage}'
     `);

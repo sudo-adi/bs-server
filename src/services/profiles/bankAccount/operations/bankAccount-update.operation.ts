@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import type { BankAccount, UpdateBankAccountDto } from '@/models/profiles/bankAccount.model';
-import { VerificationStatus, VERIFICATION_STATUSES } from '@/types/enums';
+import type { BankAccount, UpdateBankAccountDto } from '@/types/';
+import { VERIFICATION_STATUSES, VerificationStatus } from '@/types/enums';
 
 export class BankAccountUpdateOperation {
   static async update(id: string, data: UpdateBankAccountDto): Promise<BankAccount> {
@@ -15,7 +15,8 @@ export class BankAccountUpdateOperation {
 
     const updateData: any = {};
 
-    if (data.account_holder_name !== undefined) updateData.account_holder_name = data.account_holder_name;
+    if (data.account_holder_name !== undefined)
+      updateData.account_holder_name = data.account_holder_name;
     if (data.account_number !== undefined) updateData.account_number = data.account_number;
     if (data.ifsc_code !== undefined) updateData.ifsc_code = data.ifsc_code;
     if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
@@ -32,7 +33,8 @@ export class BankAccountUpdateOperation {
       updateData.verification_status = data.verification_status;
     }
     if (data.verified_at !== undefined) updateData.verified_at = data.verified_at;
-    if (data.verified_by_user_id !== undefined) updateData.verified_by_user_id = data.verified_by_user_id;
+    if (data.verified_by_user_id !== undefined)
+      updateData.verified_by_user_id = data.verified_by_user_id;
 
     if (Object.keys(updateData).length === 0) {
       throw new AppError('No fields to update', 400);

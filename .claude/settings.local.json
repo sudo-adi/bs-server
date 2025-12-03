@@ -39,7 +39,15 @@
       "Bash(npx tsx:*)",
       "Bash(psql:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(nc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(while read dir)",
+      "Bash(do if [ -d \"src/types/domain/$dir\" ])",
+      "Bash([ ! -f \"src/types/domain/$dir/index.ts\" ])",
+      "Bash(then echo \"$dir\")",
+      "Bash(fi)",
+      "Bash(npx prisma validate:*)"
     ],
     "deny": [],
     "ask": []

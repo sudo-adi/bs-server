@@ -1,4 +1,4 @@
-import { UserResponse } from '@/models/admin/user.model';
+import { UserResponse } from '@/types';
 import { userService } from '@/services/admin';
 
 export class AuthUserQuery {

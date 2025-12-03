@@ -1,6 +1,6 @@
 import type { profiles } from '@/generated/prisma';
-import { ChangeStageDto, ProfileWithDetails } from '@/models/profiles/profile.model';
-import type { CreateProfileDto, UpdateProfileDto } from '@/types/prisma.types';
+import { ChangeStageDto, ProfileWithDetails } from '@/types/';
+import { CreateProfileDto, UpdateProfileDto } from '@/types/domain/profile';
 import { ProfileAuthDomain } from './domain/profile-auth.domain';
 import { ProfileStageDomain } from './domain/profile-stage.domain';
 import { ProfileCreateOperation } from './operations/profile-create.operation';
@@ -78,6 +78,7 @@ export class ProfileService {
   /**
    * Get all profiles with filtering
    */
+
   async getAllProfiles(filters?: {
     stage?: string;
     skill_category_id?: string;
@@ -86,6 +87,7 @@ export class ProfileService {
     search?: string;
     trainer_name?: string;
     training_batch_id?: string;
+    has_batch_enrollment?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<{ profiles: profiles[]; total: number }> {
@@ -108,8 +110,8 @@ export class ProfileService {
       return ProfileStageQuery.getProfilesByStage(filters.stage, filters);
     }
 
-    // If filtering by trainer or batch, use specialized query
-    if (filters?.trainer_name || filters?.training_batch_id) {
+    // If filtering by trainer, batch, or has_batch_enrollment, use specialized query
+    if (filters?.trainer_name || filters?.training_batch_id || filters?.has_batch_enrollment) {
       return ProfileTrainingQuery.getProfilesByTraining(filters);
     }
 
