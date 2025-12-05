@@ -121,3 +121,47 @@ export const deleteEnrollment = catchAsync(async (req: Request, res: Response) =
     message: 'Enrollment deleted successfully',
   });
 });
+
+// ============================================================================
+// BULK OPERATIONS
+// ============================================================================
+
+// Bulk mark enrollments as completed
+export const bulkMarkCompleted = catchAsync(async (req: Request, res: Response) => {
+  const { enrollment_ids } = req.body;
+
+  if (!enrollment_ids || !Array.isArray(enrollment_ids) || enrollment_ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'enrollment_ids array is required',
+    });
+  }
+
+  const result = await batchEnrollmentService.bulkMarkCompleted(enrollment_ids);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully marked ${result.success} enrollments as completed`,
+    data: result,
+  });
+});
+
+// Bulk mark enrollments as dropped
+export const bulkMarkDropped = catchAsync(async (req: Request, res: Response) => {
+  const { enrollment_ids } = req.body;
+
+  if (!enrollment_ids || !Array.isArray(enrollment_ids) || enrollment_ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'enrollment_ids array is required',
+    });
+  }
+
+  const result = await batchEnrollmentService.bulkMarkDropped(enrollment_ids);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully marked ${result.success} enrollments as dropped`,
+    data: result,
+  });
+});

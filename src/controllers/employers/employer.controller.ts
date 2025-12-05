@@ -122,3 +122,98 @@ export const deleteEmployer = catchAsync(async (req: Request, res: Response) => 
     message: 'Employer deleted successfully',
   });
 });
+
+// === Bulk Operations ===
+export const bulkVerify = catchAsync(async (req: Request, res: Response) => {
+  const { employer_ids, user_id } = req.body;
+
+  console.log('Bulk verify request:', { employer_ids, user_id });
+
+  if (!employer_ids || !Array.isArray(employer_ids) || employer_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'employer_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  if (typeof user_id !== 'string' || user_id.length < 36) {
+    res.status(400).json({
+      success: false,
+      message: `Invalid user_id format: ${user_id}`,
+    });
+    return;
+  }
+
+  const result = await employerService.bulkVerify(employer_ids, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully verified ${result.success} employers`,
+    data: result,
+  });
+});
+
+export const bulkSoftDelete = catchAsync(async (req: Request, res: Response) => {
+  const { employer_ids, user_id } = req.body;
+
+  if (!employer_ids || !Array.isArray(employer_ids) || employer_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'employer_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  const result = await employerService.bulkSoftDelete(employer_ids);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully deactivated ${result.success} employers`,
+    data: result,
+  });
+});
+
+export const bulkHardDelete = catchAsync(async (req: Request, res: Response) => {
+  const { employer_ids, user_id } = req.body;
+
+  if (!employer_ids || !Array.isArray(employer_ids) || employer_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'employer_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  const result = await employerService.bulkHardDelete(employer_ids, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully deleted ${result.success} employers and their projects`,
+    data: result,
+  });
+});

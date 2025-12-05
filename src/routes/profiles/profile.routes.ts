@@ -48,4 +48,9 @@ router.patch(
 router.delete('/:id', validate(uuidParamSchema, 'params'), profileController.deleteProfile);
 router.post('/:id/stage', profileController.changeStage);
 
+// Bulk operations
+router.post('/bulk/approve', profileController.bulkApprove);
+router.post('/bulk/soft-delete', profileController.bulkSoftDelete);
+router.post('/bulk/hard-delete', profileController.bulkHardDelete);
+
 export default router;

@@ -38,6 +38,65 @@ export class BatchEnrollmentService {
   async deleteEnrollment(id: string): Promise<void> {
     return BatchEnrollmentDeleteOperation.delete(id);
   }
+
+  // ============================================================================
+  // BULK OPERATIONS
+  // ============================================================================
+
+  async bulkMarkCompleted(
+    enrollmentIds: string[]
+  ): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: any[] = [];
+    let successCount = 0;
+
+    for (const enrollmentId of enrollmentIds) {
+      try {
+        await this.updateEnrollment(enrollmentId, {
+          status: 'completed',
+          completion_date: new Date(),
+        });
+        successCount++;
+      } catch (error) {
+        errors.push({
+          enrollment_id: enrollmentId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: errors.length,
+      errors,
+    };
+  }
+
+  async bulkMarkDropped(
+    enrollmentIds: string[]
+  ): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: any[] = [];
+    let successCount = 0;
+
+    for (const enrollmentId of enrollmentIds) {
+      try {
+        await this.updateEnrollment(enrollmentId, {
+          status: 'dropped',
+        });
+        successCount++;
+      } catch (error) {
+        errors.push({
+          enrollment_id: enrollmentId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: errors.length,
+      errors,
+    };
+  }
 }
 
 export default new BatchEnrollmentService();

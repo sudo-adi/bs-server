@@ -201,8 +201,8 @@ export class EmployerRegisterOperation {
         };
       },
       {
-        maxWait: 10000, // Maximum wait time in ms
-        timeout: 20000, // Timeout in ms
+        maxWait: 1000000, // Maximum wait time in ms
+        timeout: 2000000, // Timeout in ms
       }
     );
 

@@ -3,6 +3,7 @@ import type { profiles } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
 import { ChangeStageDto } from '@/types';
 import { PROFILE_STAGES, ProfileStage, isValidStageTransition } from '@/types/enums';
+import { CodeGenerator } from '@/utils/codeGenerator';
 
 export class ProfileStageDomain {
   /**
@@ -53,6 +54,27 @@ export class ProfileStageDomain {
           );
         }
 
+        // Generate worker ID if transitioning to BENCHED, APPROVED, or ONBOARDED stage
+        // and profile doesn't already have a BSW code
+        const needsWorkerCode = [
+          ProfileStage.BENCHED,
+          ProfileStage.APPROVED,
+          ProfileStage.ONBOARDED,
+        ].includes(data.to_stage as ProfileStage);
+
+        let updatedProfile = currentProfile;
+
+        if (needsWorkerCode && currentProfile.candidate_code && !currentProfile.candidate_code.startsWith('BSW-')) {
+          // Generate worker code (BSW prefix)
+          const workerCode = await CodeGenerator.generate('worker');
+
+          // Update profile with worker code
+          updatedProfile = await tx.profiles.update({
+            where: { id: profileId },
+            data: { candidate_code: workerCode },
+          });
+        }
+
         // Record stage transition (this is the source of truth for current stage)
         await tx.stage_transitions.create({
           data: {
@@ -64,7 +86,7 @@ export class ProfileStageDomain {
           },
         });
 
-        return currentProfile;
+        return updatedProfile;
       });
 
       return profile;

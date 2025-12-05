@@ -308,7 +308,12 @@ model profiles {
   aadhaar_number                 String?                      @db.VarChar(12)
   emergency_contact_name         String?                      @db.VarChar(255)
   emergency_contact_number       String?                      @db.VarChar(20)
+  languages_known                String?                      @db.VarChar(500)
+  nominee_name                   String?                      @db.VarChar(255)
+  blood_group                    String?                      @db.VarChar(10)
   current_stage                  String?                      @default("new") @db.VarChar(50)
+  password_hash                  String?                      @db.VarChar(255)
+  primary_skill_id               String?                      @db.Uuid
   addresses                      addresses[]
   bank_accounts                  bank_accounts[]
   batch_enrollments              batch_enrollments[]
@@ -319,6 +324,7 @@ model profiles {
   profile_salary_slips           profile_salary_slips[]
   profile_skills                 profile_skills[]
   users                          users?                       @relation(fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  primary_skill                  skill_categories?            @relation("ProfilePrimarySkill", fields: [primary_skill_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_worker_assignments     project_worker_assignments[]
   qualifications                 qualifications[]
   stage_transitions              stage_transitions[]
@@ -326,6 +332,7 @@ model profiles {
   @@index([esic_number], map: "idx_profiles_esic")
   @@index([pan_number], map: "idx_profiles_pan")
   @@index([uan_number], map: "idx_profiles_uan")
+  @@index([primary_skill_id], map: "idx_profiles_primary_skill")
 }
 
 model project_financials {
@@ -578,6 +585,7 @@ model skill_categories {
   updated_at                    DateTime?                       @default(now()) @db.Timestamp(6)
   id                            String                          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   profile_skills                profile_skills[]
+  profiles_with_primary_skill   profiles[]                      @relation("ProfilePrimarySkill")
   project_request_requirements  project_request_requirements[]
   project_resource_requirements project_resource_requirements[]
   project_worker_assignments    project_worker_assignments[]

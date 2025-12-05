@@ -85,6 +85,7 @@ export class ProfileService {
     isActive?: boolean;
     isBlacklisted?: boolean;
     search?: string;
+    codePrefix?: string; // Filter by candidate code prefix (BSW, BSC, etc.)
     trainer_name?: string;
     training_batch_id?: string;
     has_batch_enrollment?: boolean;
@@ -146,6 +147,103 @@ export class ProfileService {
    */
   async generateAuthToken(profileId: string): Promise<{ token: string }> {
     return ProfileAuthDomain.generateAuthToken(profileId);
+  }
+
+  // ============================================================================
+  // BULK OPERATIONS
+  // ============================================================================
+
+  /**
+   * Bulk approve profiles (change stage to approved)
+   */
+  async bulkApprove(
+    profileIds: string[],
+    userId: string
+  ): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: any[] = [];
+    let successCount = 0;
+
+    for (const profileId of profileIds) {
+      try {
+        await this.changeStage(profileId, {
+          to_stage: 'approved',
+          notes: 'Bulk approved by admin',
+          user_id: userId,
+        });
+        successCount++;
+      } catch (error) {
+        errors.push({
+          profile_id: profileId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: errors.length,
+      errors,
+    };
+  }
+
+  /**
+   * Bulk soft delete profiles (set is_active = false)
+   */
+  async bulkSoftDelete(
+    profileIds: string[],
+    userId: string
+  ): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: any[] = [];
+    let successCount = 0;
+
+    for (const profileId of profileIds) {
+      try {
+        await this.updateProfile(profileId, {
+          is_active: false,
+        });
+        successCount++;
+      } catch (error) {
+        errors.push({
+          profile_id: profileId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: errors.length,
+      errors,
+    };
+  }
+
+  /**
+   * Bulk hard delete profiles (permanently remove from database)
+   */
+  async bulkHardDelete(
+    profileIds: string[],
+    userId: string
+  ): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: any[] = [];
+    let successCount = 0;
+
+    for (const profileId of profileIds) {
+      try {
+        await this.hardDeleteProfile(profileId);
+        successCount++;
+      } catch (error) {
+        errors.push({
+          profile_id: profileId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: errors.length,
+      errors,
+    };
   }
 }
 

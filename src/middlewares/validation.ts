@@ -262,6 +262,7 @@ export const updateProfileSchema = Joi.object({
   date_of_birth: Joi.date().iso().max('now').optional().allow(null),
   profile_photo_url: Joi.string().uri().max(500).optional().allow(null),
   is_active: Joi.boolean().optional(),
+  primary_skill_id: Joi.string().uuid().optional().allow(null),
 }).min(1); // At least one field must be provided
 
 // Training Batch validation schemas

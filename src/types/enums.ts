@@ -109,7 +109,7 @@ export function isValidEnumValue<T extends string>(value: string, enumValues: T[
 export const STAGE_TRANSITION_RULES: Record<string, ProfileStage[]> = {
   [ProfileStage.NEW_REGISTRATION]: [ProfileStage.SCREENING, ProfileStage.APPROVED, ProfileStage.REJECTED],
   [ProfileStage.SCREENING]: [ProfileStage.APPROVED, ProfileStage.REJECTED],
-  [ProfileStage.APPROVED]: [ProfileStage.TRAINING, ProfileStage.ONBOARDED],
+  [ProfileStage.APPROVED]: [ProfileStage.TRAINING, ProfileStage.ONBOARDED, ProfileStage.BENCHED],
   [ProfileStage.REJECTED]: [], // Terminal state
   [ProfileStage.TRAINING]: [ProfileStage.TRAINED, ProfileStage.REJECTED], // Legacy
   [ProfileStage.TRAINED]: [ProfileStage.ONBOARDED],

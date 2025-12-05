@@ -106,6 +106,21 @@ export class EmployerQuery {
             },
           },
         },
+        employer_authorized_persons: {
+          orderBy: { created_at: 'asc' },
+          select: {
+            id: true,
+            employer_id: true,
+            name: true,
+            designation: true,
+            email: true,
+            phone: true,
+            address: true,
+            is_primary: true,
+            created_at: true,
+            updated_at: true,
+          },
+        },
       },
     });
 

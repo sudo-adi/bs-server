@@ -75,6 +75,7 @@ export const getAllProfiles = catchAsync(async (req: Request, res: Response) => 
     isActive: req.query.isActive ? req.query.isActive === 'true' : undefined,
     isBlacklisted: req.query.isBlacklisted ? req.query.isBlacklisted === 'true' : undefined,
     search: req.query.search as string | undefined,
+    codePrefix: req.query.codePrefix as string | undefined, // Filter by BSW, BSC, etc.
     training_batch_id: req.query.training_batch_id as string | undefined,
     has_batch_enrollment: req.query.has_batch_enrollment
       ? req.query.has_batch_enrollment === 'true'
@@ -216,5 +217,90 @@ export const changeStage = catchAsync(async (req: Request, res: Response) => {
     success: true,
     message: 'Stage changed successfully',
     data: profile,
+  });
+});
+
+// === Bulk Operations ===
+export const bulkApprove = catchAsync(async (req: Request, res: Response) => {
+  const { profile_ids, user_id } = req.body;
+
+  if (!profile_ids || !Array.isArray(profile_ids) || profile_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'profile_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  const result = await profileService.bulkApprove(profile_ids, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully approved ${result.success} candidates`,
+    data: result,
+  });
+});
+
+export const bulkSoftDelete = catchAsync(async (req: Request, res: Response) => {
+  const { profile_ids, user_id } = req.body;
+
+  if (!profile_ids || !Array.isArray(profile_ids) || profile_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'profile_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  const result = await profileService.bulkSoftDelete(profile_ids, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully deactivated ${result.success} candidates`,
+    data: result,
+  });
+});
+
+export const bulkHardDelete = catchAsync(async (req: Request, res: Response) => {
+  const { profile_ids, user_id } = req.body;
+
+  if (!profile_ids || !Array.isArray(profile_ids) || profile_ids.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'profile_ids array is required',
+    });
+    return;
+  }
+
+  if (!user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'user_id is required',
+    });
+    return;
+  }
+
+  const result = await profileService.bulkHardDelete(profile_ids, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully deleted ${result.success} candidates`,
+    data: result,
   });
 });

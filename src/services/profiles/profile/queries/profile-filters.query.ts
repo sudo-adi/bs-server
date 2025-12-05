@@ -9,6 +9,7 @@ export class ProfileFiltersQuery {
     isActive?: boolean;
     isBlacklisted?: boolean;
     search?: string;
+    codePrefix?: string; // Filter by candidate_code prefix (e.g., 'BSW', 'BSC')
     limit?: number;
     offset?: number;
   }): Promise<{ profiles: profiles[]; total: number }> {
@@ -25,6 +26,13 @@ export class ProfileFiltersQuery {
       where.profile_blacklist = filters.isBlacklisted
         ? { some: { is_active: true } }
         : { none: { is_active: true } };
+    }
+
+    // Filter by candidate code prefix (e.g., BSW-, BSC-)
+    if (filters?.codePrefix) {
+      where.candidate_code = {
+        startsWith: `${filters.codePrefix}-`,
+      };
     }
 
     if (filters?.search) {
