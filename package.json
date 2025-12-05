@@ -5,7 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
-    "build": "tsc && tsc-alias && npm run copy:prisma && npm run postbuild",
+    "prisma:generate": "npx prisma generate",
+    "prisma:deploy": "npx prisma migrate deploy",
+    "build": "npm run prisma:generate && tsc && tsc-alias && npm run copy:prisma && npm run postbuild",
+    "build:render": "npm run prisma:generate && npm run prisma:deploy && tsc && tsc-alias && npm run copy:prisma && npm run postbuild",
     "copy:prisma": "mkdir -p dist/generated && cp -r src/generated/prisma dist/generated/",
     "postbuild": "node scripts/fix-imports.js",
     "start": "node dist/index.js",
