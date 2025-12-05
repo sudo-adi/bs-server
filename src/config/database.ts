@@ -2,14 +2,35 @@ import { Pool, PoolClient } from 'pg';
 import { env } from './env';
 import logger from './logger';
 import * as dns from 'dns';
+import { promisify } from 'util';
+
+const resolve4 = promisify(dns.resolve4);
 
 class Database {
   private pool: Pool;
   private static instance: Database;
 
   private constructor() {
-    // Set DNS resolution order to prefer IPv4
-    dns.setDefaultResultOrder('ipv4first');
+    // Custom IPv4-only DNS lookup function
+    const lookup = (hostname: string, options: any, callback: any) => {
+      // Handle both callback signatures
+      if (typeof options === 'function') {
+        callback = options;
+        options = {};
+      }
+
+      resolve4(hostname)
+        .then((addresses) => {
+          if (addresses && addresses.length > 0) {
+            callback(null, addresses[0], 4);
+          } else {
+            callback(new Error(`No IPv4 address found for ${hostname}`));
+          }
+        })
+        .catch((error) => {
+          callback(error);
+        });
+    };
 
     this.pool = new Pool({
       host: env.DB_HOST,
@@ -22,7 +43,9 @@ class Database {
       connectionTimeoutMillis: 20000,
       ssl: {
         rejectUnauthorized: false
-      }
+      },
+      // @ts-ignore - Override DNS lookup to force IPv4 resolution only
+      lookup: lookup
     });
 
     this.pool.on('error', (err) => {
