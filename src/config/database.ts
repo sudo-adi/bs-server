@@ -1,12 +1,16 @@
 import { Pool, PoolClient } from 'pg';
 import { env } from './env';
 import logger from './logger';
+import * as dns from 'dns';
 
 class Database {
   private pool: Pool;
   private static instance: Database;
 
   private constructor() {
+    // Set DNS resolution order to prefer IPv4
+    dns.setDefaultResultOrder('ipv4first');
+
     this.pool = new Pool({
       host: env.DB_HOST,
       port: env.DB_PORT,
