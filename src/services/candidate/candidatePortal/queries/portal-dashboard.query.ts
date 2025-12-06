@@ -94,7 +94,7 @@ export class PortalDashboardQuery {
         ? {
             batch_name: currentTraining.training_batches?.name,
             program_name: currentTraining.training_batches?.program_name,
-            trainer_name: currentTraining.training_batches?.trainers?.name,
+            trainer_name: currentTraining.training_batches?.trainer_batch_assignments?.[0]?.trainers?.profiles?.first_name || null,
             start_date: currentTraining.training_batches?.start_date,
             end_date: currentTraining.training_batches?.end_date,
             days_left: trainingDaysLeft,

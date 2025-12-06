@@ -3,7 +3,6 @@ import { AppError } from '@/middlewares/errorHandler';
 import {
   AssignTrainerByProfileDto,
   BulkAssignTrainersDto,
-  CreateTrainerBatchAssignmentDto,
   TrainerBatchAssignmentWithDetails,
 } from '@/types';
 
