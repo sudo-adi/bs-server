@@ -7,7 +7,6 @@ import { Router } from 'express';
 import trainingBatchRoutes from './trainingBatch.routes';
 import batchEnrollmentRoutes from './batchEnrollment.routes';
 import trainerRoutes from './trainer.routes';
-import trainerCsvImportRoutes from './trainerCsvImport.routes';
 
 const router = Router();
 
@@ -17,9 +16,6 @@ const router = Router();
  * /api/trainers
  *   - Trainer management
  *
- * /api/trainers/csv
- *   - CSV import and export operations
- *
  * /api/training-batches
  *   - Training batch management
  *
@@ -28,7 +24,6 @@ const router = Router();
  */
 
 router.use('/trainers', trainerRoutes);
-router.use('/trainers/csv', trainerCsvImportRoutes);
 router.use('/training-batches', trainingBatchRoutes);
 router.use('/batch-enrollments', batchEnrollmentRoutes);
 

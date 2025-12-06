@@ -4,6 +4,8 @@ import type {
   Profile,
   ProfileSkill,
   SkillCategory,
+  TrainerBatchAssignment,
+  Trainer,
 } from '@/types/prisma.types';
 import type { WithRelations } from '@/types/shared';
 
@@ -12,6 +14,11 @@ export type TrainingBatchWithEnrollments = WithRelations<
   {
     batch_enrollments?: (BatchEnrollment & {
       profiles?: Profile | null;
+    })[];
+    trainer_batch_assignments?: (TrainerBatchAssignment & {
+      trainers?: Trainer & {
+        profiles?: Profile | null;
+      };
     })[];
     skill_categories?: SkillCategory | null;
     enrolled_count?: number;

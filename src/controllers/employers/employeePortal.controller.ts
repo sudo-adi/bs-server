@@ -167,12 +167,24 @@ export const getWorkerTraining = catchAsync(async (req: Request, res: Response) 
           end_date: true,
           location: true,
           status: true,
-          trainers: {
+          trainer_batch_assignments: {
+            where: {
+              is_active: true,
+            },
             select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
+              trainers: {
+                select: {
+                  id: true,
+                  profiles: {
+                    select: {
+                      first_name: true,
+                      last_name: true,
+                      email: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },

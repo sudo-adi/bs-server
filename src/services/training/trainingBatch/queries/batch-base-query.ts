@@ -52,13 +52,25 @@ export class TrainingBatchBaseQuery {
             },
             select: { id: true },
           },
-          trainers: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              employee_code: true,
+          trainer_batch_assignments: {
+            where: {
+              is_active: true,
+            },
+            include: {
+              trainers: {
+                include: {
+                  profiles: {
+                    select: {
+                      id: true,
+                      candidate_code: true,
+                      first_name: true,
+                      last_name: true,
+                      email: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -89,13 +101,25 @@ export class TrainingBatchBaseQuery {
     const batch = await prisma.training_batches.findUnique({
       where: { id },
       include: {
-        trainers: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            employee_code: true,
+        trainer_batch_assignments: {
+          where: {
+            is_active: true,
+          },
+          include: {
+            trainers: {
+              include: {
+                profiles: {
+                  select: {
+                    id: true,
+                    candidate_code: true,
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
           },
         },
         ...(includeEnrollments

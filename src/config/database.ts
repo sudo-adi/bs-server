@@ -1,38 +1,15 @@
 import { Pool, PoolClient } from 'pg';
 import { env } from './env';
 import logger from './logger';
-import * as dns from 'dns';
-import { promisify } from 'util';
-
-const resolve4 = promisify(dns.resolve4);
 
 class Database {
   private pool: Pool;
   private static instance: Database;
 
   private constructor() {
-    // Custom IPv4-only DNS lookup function
-    const lookup = (hostname: string, options: any, callback: any) => {
-      // Handle both callback signatures
-      if (typeof options === 'function') {
-        callback = options;
-        options = {};
-      }
-
-      resolve4(hostname)
-        .then((addresses) => {
-          if (addresses && addresses.length > 0) {
-            callback(null, addresses[0], 4);
-          } else {
-            callback(new Error(`No IPv4 address found for ${hostname}`));
-          }
-        })
-        .catch((error) => {
-          callback(error);
-        });
-    };
-
-    this.pool = new Pool({
+    // For Supabase, use connection pooler on port 6543 (IPv4-friendly)
+    // Or use direct connection with proper family configuration
+    const poolConfig: any = {
       host: env.DB_HOST,
       port: env.DB_PORT,
       database: env.DB_NAME,
@@ -44,9 +21,20 @@ class Database {
       ssl: {
         rejectUnauthorized: false
       },
-      // @ts-ignore - Override DNS lookup to force IPv4 resolution only
-      lookup: lookup
-    });
+      // Force IPv4 to avoid DNS resolution issues with IPv6
+      family: 4
+    };
+
+    // In production environments (like Render), force IPv4 by setting family to 4
+    // This is more reliable than custom DNS lookup
+    if (env.NODE_ENV === 'production') {
+      poolConfig.options = '-c search_path=public';
+      // Set keepalive to maintain connection stability
+      poolConfig.keepAlive = true;
+      poolConfig.keepAliveInitialDelayMillis = 10000;
+    }
+
+    this.pool = new Pool(poolConfig);
 
     this.pool.on('error', (err) => {
       logger.error('Unexpected error on idle client', err);

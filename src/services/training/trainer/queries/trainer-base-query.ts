@@ -67,33 +67,35 @@ export class TrainerBaseQuery {
       prisma.profiles.count({ where }),
     ]);
 
-    // Count batches for each trainer (using candidate_code as trainer_id reference)
+    // Convert profiles to trainers and get their trainer records
     const trainersWithBatches = await Promise.all(
       profilesData.map(async (profile) => {
-        const batchCount = await prisma.training_batches.count({
-          where: { trainer_id: profile.id },
+        // Find or get trainer record
+        const trainer = await prisma.trainers.findUnique({
+          where: { profile_id: profile.id },
         });
 
-        // Construct full name
-        const nameParts = [profile.first_name, profile.middle_name, profile.last_name].filter(
-          Boolean
-        );
-        const fullName = nameParts.join(' ');
+        // Count active batch assignments
+        const batchCount = trainer
+          ? await prisma.trainer_batch_assignments.count({
+              where: { trainer_id: trainer.id, is_active: true },
+            })
+          : 0;
 
         return {
-          id: profile.id,
-          name: fullName,
-          email: profile.email || '',
-          phone: profile.phone,
-          password_hash: profile.password_hash,
-          profile_photo_url: profile.profile_photo_url,
-          employee_code: profile.candidate_code,
-          is_active: profile.is_active ?? true,
-          created_by_user_id: null,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
+          ...trainer,
+          profile_id: profile.id,
+          specialization: trainer?.specialization || null,
+          certifications: trainer?.certifications || null,
+          years_of_experience: trainer?.years_of_experience || null,
+          bio: trainer?.bio || null,
+          is_active: trainer?.is_active ?? true,
+          created_by_user_id: trainer?.created_by_user_id || null,
+          created_at: trainer?.created_at || profile.created_at,
+          updated_at: trainer?.updated_at || profile.updated_at,
+          id: trainer?.id || profile.id, // Use trainer ID if exists, otherwise profile ID
           batch_count: batchCount,
-        };
+        } as Trainer & { batch_count: number };
       })
     );
 
@@ -101,62 +103,46 @@ export class TrainerBaseQuery {
   }
 
   async getTrainerById(id: string, includeBatches?: boolean): Promise<TrainerWithBatches> {
-    // Get trainer profile from profiles table
-    const profile = await prisma.profiles.findUnique({
+    // Get trainer record
+    const trainer = await prisma.trainers.findUnique({
       where: { id },
       include: {
-        profile_skills: {
+        profiles: {
           include: {
-            skill_categories: true,
+            profile_skills: {
+              include: {
+                skill_categories: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!profile || profile.deleted_at || !profile.candidate_code?.startsWith('BSW')) {
+    if (!trainer || !trainer.profiles || trainer.profiles.deleted_at) {
       throw new AppError('Trainer not found', 404);
     }
 
-    // Check if profile has "Trainer" skill
-    const hasTrainerSkill = profile.profile_skills.some(
-      (skill) => skill.skill_categories?.name.toLowerCase() === 'trainer'
-    );
-
-    if (!hasTrainerSkill) {
-      throw new AppError('Profile does not have Trainer skill', 404);
-    }
-
-    // Get batches if requested
-    let batches = undefined;
+    // Get batch assignments if requested
+    let assignments = undefined;
     if (includeBatches) {
-      batches = await prisma.training_batches.findMany({
-        where: { trainer_id: id },
+      assignments = await prisma.trainer_batch_assignments.findMany({
+        where: { trainer_id: id, is_active: true },
+        include: {
+          training_batches: true,
+        },
         orderBy: { created_at: 'desc' },
       });
     }
 
-    // Construct full name
-    const nameParts = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean);
-    const fullName = nameParts.join(' ');
-
     // Get batch count
-    const batchCount = await prisma.training_batches.count({
-      where: { trainer_id: id },
+    const batchCount = await prisma.trainer_batch_assignments.count({
+      where: { trainer_id: id, is_active: true },
     });
 
     const result: TrainerWithBatches = {
-      id: profile.id,
-      name: fullName,
-      email: profile.email || '',
-      phone: profile.phone,
-      password_hash: profile.password_hash,
-      profile_photo_url: profile.profile_photo_url,
-      employee_code: profile.candidate_code,
-      is_active: profile.is_active ?? true,
-      created_by_user_id: null,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
-      training_batches: batches,
+      ...trainer,
+      trainer_batch_assignments: assignments,
       batch_count: batchCount,
     };
 
@@ -164,8 +150,8 @@ export class TrainerBaseQuery {
   }
 
   async getBatchCount(trainerId: string): Promise<number> {
-    return prisma.training_batches.count({
-      where: { trainer_id: trainerId },
+    return prisma.trainer_batch_assignments.count({
+      where: { trainer_id: trainerId, is_active: true },
     });
   }
 }

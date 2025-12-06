@@ -361,9 +361,21 @@ export class CertificateService {
         name: true,
         program_name: true,
         duration_days: true,
-        trainers: {
+        trainer_batch_assignments: {
+          where: {
+            is_active: true,
+          },
           select: {
-            name: true,
+            trainers: {
+              select: {
+                profiles: {
+                  select: {
+                    first_name: true,
+                    last_name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -416,7 +428,9 @@ export class CertificateService {
               duration: batch.duration_days ? `${batch.duration_days} days` : undefined,
               completionDate: enrollment.completion_date?.toLocaleDateString(),
               score: enrollment.score?.toString(),
-              trainerName: batch.trainers?.name,
+              trainerName: batch.trainer_batch_assignments?.[0]?.trainers?.profiles
+                ? `${batch.trainer_batch_assignments[0].trainers.profiles.first_name} ${batch.trainer_batch_assignments[0].trainers.profiles.last_name || ''}`.trim()
+                : undefined,
             },
           },
           issuedByUserId

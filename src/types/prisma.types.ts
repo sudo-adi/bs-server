@@ -38,6 +38,8 @@ export type {
   social_media_posts as SocialMediaPost,
   stage_transitions as StageTransition,
   trainers as Trainer,
+  trainer_batch_assignments as TrainerBatchAssignment,
   training_batches as TrainingBatch,
   users as User,
 } from '@/generated/prisma';
+ 

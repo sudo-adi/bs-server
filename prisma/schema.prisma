@@ -323,6 +323,7 @@ model profiles {
   profile_blacklist              profile_blacklist[]
   profile_salary_slips           profile_salary_slips[]
   profile_skills                 profile_skills[]
+  trainer                        trainers?
   users                          users?                       @relation(fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   primary_skill                  skill_categories?            @relation("ProfilePrimarySkill", fields: [primary_skill_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_worker_assignments     project_worker_assignments[]
@@ -659,43 +660,67 @@ model stage_transitions {
 }
 
 model trainers {
-  id                 String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name               String             @db.VarChar(255)
-  email              String?            @unique @db.VarChar(255)
-  phone              String             @db.VarChar(20)
-  password_hash      String?            @db.VarChar(255)
-  profile_photo_url  String?            @db.VarChar(500)
-  employee_code      String?            @unique @db.VarChar(50)
-  is_active          Boolean?           @default(true)
-  created_by_user_id String?            @db.Uuid
-  created_at         DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?          @default(now()) @db.Timestamp(6)
-  users              users?             @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  training_batches   training_batches[]
+  id                      String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id              String                    @unique @db.Uuid
+  specialization          String?                   @db.VarChar(500)
+  certifications          String?
+  years_of_experience     Int?
+  bio                     String?
+  is_active               Boolean?                  @default(true)
+  created_by_user_id      String?                   @db.Uuid
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  profiles                profiles                  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                   users?                    @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  trainer_batch_assignments trainer_batch_assignments[]
+
+  @@index([profile_id], map: "idx_trainers_profile_id")
+  @@index([is_active], map: "idx_trainers_is_active")
+}
+
+model trainer_batch_assignments {
+  id               String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  trainer_id       String            @db.Uuid
+  training_batch_id String           @db.Uuid
+  shift            String            @db.VarChar(20)
+  assigned_date    DateTime?         @default(now()) @db.Timestamp(6)
+  assigned_by_user_id String?        @db.Uuid
+  is_active        Boolean?          @default(true)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  trainers         trainers          @relation(fields: [trainer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  training_batches training_batches  @relation(fields: [training_batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users?            @relation(fields: [assigned_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([trainer_id, training_batch_id, shift], map: "uq_trainer_batch_shift")
+  @@index([trainer_id], map: "idx_trainer_batch_assignments_trainer")
+  @@index([training_batch_id], map: "idx_trainer_batch_assignments_batch")
+  @@index([shift], map: "idx_trainer_batch_assignments_shift")
 }
 
 model training_batches {
-  code               String              @unique(map: "training_batches_batch_code_key") @db.VarChar(50)
-  name               String              @db.VarChar(255)
-  program_name       String              @db.VarChar(255)
-  provider           String?             @db.VarChar(255)
-  start_date         DateTime?           @db.Date
-  end_date           DateTime?           @db.Date
-  duration_days      Int?
-  max_capacity       Int?
-  status             String?             @default("upcoming") @db.VarChar(50)
-  location           String?             @db.VarChar(255)
-  description        String?
-  created_at         DateTime?           @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?           @default(now()) @db.Timestamp(6)
-  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_by_user_id String?             @db.Uuid
-  trainer_id         String?             @db.Uuid
-  shift              String?             @db.VarChar(20)
-  batch_enrollments  batch_enrollments[]
-  certificates       certificates[]
-  users              users?              @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
-  trainers           trainers?           @relation(fields: [trainer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code                      String                      @unique(map: "training_batches_batch_code_key") @db.VarChar(50)
+  name                      String                      @db.VarChar(255)
+  program_name              String                      @db.VarChar(255)
+  provider                  String?                     @db.VarChar(255)
+  start_date                DateTime?                   @db.Date
+  end_date                  DateTime?                   @db.Date
+  duration_days             Int?
+  max_capacity              Int?
+  status                    String?                     @default("upcoming") @db.VarChar(50)
+  location                  String?                     @db.VarChar(255)
+  description               String?
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  id                        String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_by_user_id        String?                     @db.Uuid
+  batch_enrollments         batch_enrollments[]
+  certificates              certificates[]
+  users                     users?                      @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  trainer_batch_assignments trainer_batch_assignments[]
+
+  @@index([status], map: "idx_training_batches_status")
+  @@index([start_date], map: "idx_training_batches_start_date")
 }
 
 model users {
@@ -737,6 +762,7 @@ model users {
   qualifications                                                      qualifications[]
   stage_transitions                                                   stage_transitions[]
   trainers                                                            trainers[]
+  trainer_batch_assignments                                           trainer_batch_assignments[]
   training_batches                                                    training_batches[]
   roles                                                               roles?                       @relation(fields: [role_id], references: [id], onUpdate: NoAction)
 

@@ -1,8 +1,5 @@
 import prisma from '@/config/prisma';
-import { CreateTrainerDto, Trainer, TrainerWithBatches, UpdateTrainerDto } from '@/types';
-import { TrainerCreateOperation } from './operations/trainer-create.operation';
-import { TrainerDeleteOperation } from './operations/trainer-delete.operation';
-import { TrainerUpdateOperation } from './operations/trainer-update.operation';
+import { Trainer, TrainerWithBatches } from '@/types';
 import { TrainerBaseQuery } from './queries/trainer-base-query';
 
 export class TrainerService {
@@ -31,34 +28,20 @@ export class TrainerService {
   }
 
   async getTrainerBatches(trainerId: string): Promise<any[]> {
-    const batches = await prisma.training_batches.findMany({
+    const assignments = await prisma.trainer_batch_assignments.findMany({
       where: {
         trainer_id: trainerId,
+        is_active: true,
+      },
+      include: {
+        training_batches: true,
       },
       orderBy: {
-        start_date: 'asc',
+        created_at: 'desc',
       },
     });
 
-    return batches;
-  }
-
-  // ============================================================================
-  // CREATE, UPDATE, DELETE OPERATIONS
-  // ============================================================================
-
-  async createTrainer(data: CreateTrainerDto): Promise<Trainer> {
-    return TrainerCreateOperation.create(data);
-  }
-
-  async updateTrainer(id: string, data: UpdateTrainerDto): Promise<Trainer> {
-    const operation = new TrainerUpdateOperation();
-    return operation.updateTrainer(id, data);
-  }
-
-  async deleteTrainer(id: string): Promise<void> {
-    const operation = new TrainerDeleteOperation();
-    return operation.delete(id);
+    return assignments.map((a) => a.training_batches);
   }
 }
 

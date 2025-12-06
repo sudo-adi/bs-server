@@ -30,7 +30,24 @@ export class PortalDashboardQuery {
       include: {
         training_batches: {
           include: {
-            trainers: true,
+            trainer_batch_assignments: {
+              where: {
+                is_active: true,
+              },
+              include: {
+                trainers: {
+                  include: {
+                    profiles: {
+                      select: {
+                        first_name: true,
+                        last_name: true,
+                        phone: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
