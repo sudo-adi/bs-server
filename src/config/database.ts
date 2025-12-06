@@ -15,14 +15,15 @@ class Database {
       database: env.DB_NAME,
       user: env.DB_USER,
       password: env.DB_PASSWORD,
-      max: 20,
+      max: 50, // Reduced from 20 to 5 for Supabase transaction mode pooler
+      min: 1,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 20000,
       ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
       },
       // Force IPv4 to avoid DNS resolution issues with IPv6
-      family: 4
+      family: 4,
     };
 
     // In production environments (like Render), force IPv4 by setting family to 4
@@ -77,6 +78,22 @@ class Database {
     } catch (error) {
       logger.error('Database connection failed', error);
       return false;
+    }
+  }
+
+  public async killAllConnections(): Promise<void> {
+    try {
+      const result = await this.query(`
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE pid <> pg_backend_pid()
+          AND datname = current_database()
+          AND usename = current_user;
+      `);
+      logger.info(`Terminated ${result.rowCount} connections`);
+    } catch (error) {
+      logger.error('Error killing connections', error);
+      throw error;
     }
   }
 

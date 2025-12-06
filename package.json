@@ -21,7 +21,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "db:kill": "ts-node -r tsconfig-paths/register src/scripts/killConnections.ts"
   },
   "keywords": [
     "express",

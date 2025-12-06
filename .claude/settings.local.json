@@ -47,7 +47,8 @@
       "Bash([ ! -f \"src/types/domain/$dir/index.ts\" ])",
       "Bash(then echo \"$dir\")",
       "Bash(fi)",
-      "Bash(npx prisma validate:*)"
+      "Bash(npx prisma validate:*)",
+      "Bash(npm pkg set:*)"
     ],
     "deny": [],
     "ask": []
