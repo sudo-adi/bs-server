@@ -98,7 +98,7 @@ export class ProfileStageQuery {
           tb.id as batch_id,
           tb.name as batch_name,
           tb.code as batch_code,
-          t.name as trainer_name,
+          CONCAT(tp.first_name, ' ', COALESCE(tp.last_name, '')) as trainer_name,
           tb.start_date,
           tb.end_date,
           tb.status as training_status,
@@ -108,6 +108,7 @@ export class ProfileStageQuery {
         FROM batch_enrollments be
         JOIN training_batches tb ON tb.id = be.batch_id
         LEFT JOIN trainers t ON t.id = tb.trainer_id
+        LEFT JOIN profiles tp ON tp.id = t.profile_id
         WHERE be.profile_id = p.id AND be.status IN ('enrolled', 'in_progress')
         ORDER BY be.enrollment_date DESC
         LIMIT 1

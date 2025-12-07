@@ -108,29 +108,7 @@ export class ProfileTrainingQuery {
             },
           },
           include: {
-            training_batches: {
-              include: {
-                trainer_batch_assignments: {
-                  where: {
-                    is_active: true,
-                  },
-                  include: {
-                    trainers: {
-                      include: {
-                        profiles: {
-                          select: {
-                            first_name: true,
-                            last_name: true,
-                            phone: true,
-                            email: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            training_batches: true,
           },
           orderBy: { enrollment_date: 'desc' },
           take: 1,

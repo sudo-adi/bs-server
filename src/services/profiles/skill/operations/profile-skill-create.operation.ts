@@ -37,6 +37,9 @@ export class ProfileSkillCreateOperation {
       },
     });
 
+    // Trainers are now automatically derived from profiles with "Trainer" as primary skill
+    // No need to create a separate trainer record
+
     return skill;
   }
 }

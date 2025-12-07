@@ -703,6 +703,7 @@ model training_batches {
   name                      String                      @db.VarChar(255)
   program_name              String                      @db.VarChar(255)
   provider                  String?                     @db.VarChar(255)
+  trainer_id                String?                     @db.Uuid
   start_date                DateTime?                   @db.Date
   end_date                  DateTime?                   @db.Date
   duration_days             Int?
@@ -721,6 +722,7 @@ model training_batches {
 
   @@index([status], map: "idx_training_batches_status")
   @@index([start_date], map: "idx_training_batches_start_date")
+  @@index([trainer_id], map: "idx_training_batches_trainer_id")
 }
 
 model users {

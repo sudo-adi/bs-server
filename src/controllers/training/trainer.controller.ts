@@ -1,11 +1,14 @@
 import trainerService from '@/services/training/trainer/trainer.service';
 import catchAsync from '@/utils/catchAsync';
 import { Request, Response } from 'express';
+import { UpdateTrainerDto } from '@/types/domain/training/trainer.dto';
 
 /**
- * Trainer controllers - Read-only
- * NOTE: Trainer details (name, email, phone, etc.) are managed through profiles CRUD
- * This controller only handles querying trainers
+ * Trainer controllers
+ * NOTE: Basic profile details (name, email, phone, etc.) are managed through profiles CRUD
+ * This controller handles:
+ * - Querying trainers (read operations)
+ * - Updating trainer-specific fields (specialization, certifications, bio, etc.)
  */
 
 // Get all trainers with filters
@@ -53,5 +56,19 @@ export const getTrainerBatches = catchAsync(async (req: Request, res: Response) 
   res.status(200).json({
     success: true,
     data: batches,
+  });
+});
+
+// Update trainer-specific fields (specialization, certifications, bio, etc.)
+export const updateTrainer = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+  const data: UpdateTrainerDto = req.body;
+
+  const trainer = await trainerService.updateTrainer(id, data);
+
+  res.status(200).json({
+    success: true,
+    data: trainer,
+    message: 'Trainer updated successfully',
   });
 });

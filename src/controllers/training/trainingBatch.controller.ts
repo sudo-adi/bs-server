@@ -62,9 +62,20 @@ export const updateBatch = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Delete batch
+// Delete batch (hard delete - requires password)
 export const deleteBatch = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
+  const { password } = req.body;
+
+  // Verify password before hard delete
+  if (password !== 'Admin@123') {
+    res.status(403).json({
+      success: false,
+      message: 'Invalid password. Hard delete operation denied.',
+    });
+    return;
+  }
+
   await trainingBatchService.deleteBatch(id);
 
   res.status(200).json({

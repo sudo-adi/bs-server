@@ -6,10 +6,14 @@ import app from './app';
 
 const startServer = async () => {
   try {
-    // Test database connection
-    const dbConnected = await db.testConnection();
+    // Test database connection with retries (will try 3 times with exponential backoff)
+    logger.info('Starting database connection test...');
+    const dbConnected = await db.testConnection(3);
     if (!dbConnected) {
-      throw new Error('Failed to connect to database');
+      logger.error('Database connection failed after multiple retries');
+      logger.info('Server will continue starting - connection will be retried on first request');
+      // Don't throw error - let the server start anyway
+      // The connection pool will handle reconnection on first request
     }
 
     const server = app.listen(env.PORT, () => {

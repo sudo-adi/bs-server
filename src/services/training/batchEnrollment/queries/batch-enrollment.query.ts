@@ -56,30 +56,7 @@ export class BatchEnrollmentQuery {
                   },
                 },
               },
-              training_batches: {
-                include: {
-                  trainer_batch_assignments: {
-                    where: {
-                      is_active: true,
-                    },
-                    include: {
-                      trainers: {
-                        include: {
-                          profiles: {
-                            select: {
-                              id: true,
-                              candidate_code: true,
-                              first_name: true,
-                              last_name: true,
-                              phone: true,
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
+              training_batches: true,
             }
           : undefined,
         orderBy: { enrollment_date: 'desc' },
@@ -121,30 +98,7 @@ export class BatchEnrollmentQuery {
                 },
               },
             },
-            training_batches: {
-              include: {
-                trainer_batch_assignments: {
-                  where: {
-                    is_active: true,
-                  },
-                  include: {
-                    trainers: {
-                      include: {
-                        profiles: {
-                          select: {
-                            id: true,
-                            candidate_code: true,
-                            first_name: true,
-                            last_name: true,
-                            phone: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            training_batches: true,
           }
         : undefined,
     });

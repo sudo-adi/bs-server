@@ -51,6 +51,9 @@ export class ProfileSkillUpdateOperation {
       },
     });
 
+    // Trainers are now automatically derived from profiles with "Trainer" as primary skill
+    // No need to manage a separate trainer record
+
     return skill;
   }
 }

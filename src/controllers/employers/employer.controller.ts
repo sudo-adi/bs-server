@@ -191,7 +191,7 @@ export const bulkSoftDelete = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const bulkHardDelete = catchAsync(async (req: Request, res: Response) => {
-  const { employer_ids, user_id } = req.body;
+  const { employer_ids, user_id, password } = req.body;
 
   if (!employer_ids || !Array.isArray(employer_ids) || employer_ids.length === 0) {
     res.status(400).json({
@@ -205,6 +205,15 @@ export const bulkHardDelete = catchAsync(async (req: Request, res: Response) => 
     res.status(400).json({
       success: false,
       message: 'user_id is required',
+    });
+    return;
+  }
+
+  // Verify password before hard delete
+  if (password !== 'Admin@123') {
+    res.status(403).json({
+      success: false,
+      message: 'Invalid password. Hard delete operation denied.',
     });
     return;
   }

@@ -11,28 +11,7 @@ export class PortalTrainingQuery {
         profile_id: profileId,
       },
       include: {
-        training_batches: {
-          include: {
-            trainer_batch_assignments: {
-              where: {
-                is_active: true,
-              },
-              include: {
-                trainers: {
-                  include: {
-                    profiles: {
-                      select: {
-                        first_name: true,
-                        last_name: true,
-                        phone: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        training_batches: true,
         users: {
           select: {
             full_name: true,
@@ -95,7 +74,7 @@ export class PortalTrainingQuery {
           name: enrollment.training_batches?.name,
           program_name: enrollment.training_batches?.program_name,
           provider: enrollment.training_batches?.provider,
-          trainer_name: enrollment.training_batches?.trainers?.name,
+          trainer_id: enrollment.training_batches?.trainers?.id || null,
           start_date: enrollment.training_batches?.start_date,
           end_date: enrollment.training_batches?.end_date,
           duration_days: enrollment.training_batches?.duration_days,

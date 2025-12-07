@@ -28,28 +28,7 @@ export class PortalDashboardQuery {
         },
       },
       include: {
-        training_batches: {
-          include: {
-            trainer_batch_assignments: {
-              where: {
-                is_active: true,
-              },
-              include: {
-                trainers: {
-                  include: {
-                    profiles: {
-                      select: {
-                        first_name: true,
-                        last_name: true,
-                        phone: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        training_batches: true,
       },
       orderBy: {
         enrollment_date: 'desc',
@@ -94,7 +73,7 @@ export class PortalDashboardQuery {
         ? {
             batch_name: currentTraining.training_batches?.name,
             program_name: currentTraining.training_batches?.program_name,
-            trainer_name: currentTraining.training_batches?.trainer_batch_assignments?.[0]?.trainers?.profiles?.first_name || null,
+            trainer_id: currentTraining.training_batches?.trainer_id || null,
             start_date: currentTraining.training_batches?.start_date,
             end_date: currentTraining.training_batches?.end_date,
             days_left: trainingDaysLeft,
