@@ -48,9 +48,35 @@
       "Bash(then echo \"$dir\")",
       "Bash(fi)",
       "Bash(npx prisma validate:*)",
-      "Bash(npm pkg set:*)"
+      "Bash(npm pkg set:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(timeout 5 npx ts-node:*)",
+      "Bash(PGPASSWORD='PrimaryDB2024SecurePass!' psql:*)",
+      "Bash(tee:*)",
+      "Bash(TEST_ID=\"596e89d7-c2dd-43c8-8cc0-dec44a0efa61\":*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRhZTdjZWU2LTU0OTctNDIzYS1hNGRmLTcyOGQ4MjI2MjUyZSIsInBob25lIjoiOTg3NjU0MzIxMiIsImVtYWlsIjoiYWRtaW5AYnVpbGRzZXdhLmluIiwidXNlclR5cGUiOiJwcm9maWxlIiwid29ya2VyQ29kZSI6IkJTVy0wMDAwMyIsImNhbmRpZGF0ZUNvZGUiOiJCU0MtMDAwMDMiLCJpc0FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNzY2NTIwMjI4LCJleHAiOjE3NjcxMjUwMjh9.5hHkzetDB4BAPOsglG1o6PPI-g9mcZLwTBxfMBaeqiE\")",
+      "Bash(__NEW_LINE__ echo \"=== 1. Approve Candidate ===\")",
+      "Bash(__NEW_LINE__ echo \"=== 2. Convert to Worker ===\")",
+      "Bash(__NEW_LINE__ echo \"=== 3. Deactivate Profile ===\")",
+      "Bash(__NEW_LINE__ echo \"=== 4. Reactivate Profile ===\")",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(git push)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndev\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

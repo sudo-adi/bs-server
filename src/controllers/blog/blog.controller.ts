@@ -1,143 +1,99 @@
-import { CreateBlogDto, UpdateBlogDto } from '@/types';
+import { blogService } from '@/services/blog';
 import { Request, Response } from 'express';
-import blogService from '../../services/blog/blog.service';
-import { catchAsync } from '../../utils/catchAsync';
 
-export const createBlog = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user?.id;
-  if (!userId) {
-    return res.status(401).json({
-      success: false,
-      message: 'User not authenticated',
-    });
+export class BlogController {
+  async getAll(req: Request, res: Response): Promise<void> {
+    try {
+      const query = {
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
+        search: req.query.search as string,
+        category: req.query.category as string,
+      };
+      const result = await blogService.getAllBlogs(query);
+      res.status(200).json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || 'Failed to fetch blogs' });
+    }
   }
 
-  const blogData: CreateBlogDto = req.body;
-
-  const blog = await blogService.createBlog(userId, blogData);
-
-  // Convert BigInt to string for JSON serialization
-  const serializedBlog = {
-    ...blog,
-    id: blog.id.toString(),
-  };
-
-  res.status(201).json({
-    success: true,
-    message: 'Blog created successfully',
-    data: serializedBlog,
-  });
-});
-
-export const getAllBlogs = catchAsync(async (req: Request, res: Response) => {
-  const filters = {
-    category: req.query.category as string,
-    search: req.query.search as string,
-    page: req.query.page ? parseInt(req.query.page as string) : 1,
-    limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
-  };
-
-  const result = await blogService.getAllBlogs(filters);
-
-  // Convert BigInt to string for JSON serialization
-  const serializedBlogs = result.blogs.map((blog) => ({
-    ...blog,
-    id: blog.id.toString(),
-  }));
-
-  res.status(200).json({
-    success: true,
-    data: serializedBlogs,
-    total: result.total,
-    limit: result.limit,
-    offset: result.offset,
-  });
-});
-
-export const getBlogById = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const blog = await blogService.getBlogById(id);
-
-  if (!blog) {
-    return res.status(404).json({
-      success: false,
-      message: 'Blog not found',
-    });
+  async getById(req: Request, res: Response): Promise<void> {
+    try {
+      const blog = await blogService.getBlogById(req.params.id);
+      if (!blog) {
+        res.status(404).json({ success: false, message: 'Blog not found' });
+        return;
+      }
+      res.status(200).json({ success: true, data: blog });
+    } catch (error: any) {
+      const status = error.message === 'Blog not found' ? 404 : 500;
+      res.status(status).json({ success: false, message: error.message || 'Failed to fetch blog' });
+    }
   }
 
-  // Convert BigInt to string for JSON serialization
-  const serializedBlog = {
-    ...blog,
-    id: blog.id.toString(),
-  };
+  async create(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.body.title) {
+        res.status(400).json({ success: false, message: 'Title is required' });
+        return;
+      }
+      const blog = await blogService.createBlog(req.user?.id || '', req.body);
+      res.status(201).json({ success: true, message: 'Blog created successfully', data: blog });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || 'Failed to create blog' });
+    }
+  }
 
-  res.status(200).json({
-    success: true,
-    data: serializedBlog,
-  });
-});
+  async update(req: Request, res: Response): Promise<void> {
+    try {
+      const blog = await blogService.updateBlog(req.params.id, req.body);
+      res.status(200).json({ success: true, message: 'Blog updated successfully', data: blog });
+    } catch (error: any) {
+      const status = error.message === 'Blog not found' ? 404 : 500;
+      res
+        .status(status)
+        .json({ success: false, message: error.message || 'Failed to update blog' });
+    }
+  }
 
-export const updateBlog = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updateData: UpdateBlogDto = req.body;
+  async delete(req: Request, res: Response): Promise<void> {
+    try {
+      await blogService.deleteBlog(req.params.id);
+      res.status(200).json({ success: true, message: 'Blog deleted successfully' });
+    } catch (error: any) {
+      const status = error.message === 'Blog not found' ? 404 : 500;
+      res
+        .status(status)
+        .json({ success: false, message: error.message || 'Failed to delete blog' });
+    }
+  }
 
-  const blog = await blogService.updateBlog(id, updateData);
+  async getPublished(req: Request, res: Response): Promise<void> {
+    try {
+      const query = {
+        page: req.query.page ? parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
+        search: req.query.search as string,
+        category: req.query.category as string,
+      };
+      const result = await blogService.getPublishedBlogs(query);
+      res.status(200).json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || 'Failed to fetch blogs' });
+    }
+  }
 
-  // Convert BigInt to string for JSON serialization
-  const serializedBlog = {
-    ...blog,
-    id: blog.id.toString(),
-  };
+  async getCategories(req: Request, res: Response): Promise<void> {
+    try {
+      const categories = await blogService.getBlogCategories();
+      res.status(200).json({ success: true, data: categories });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({ success: false, message: error.message || 'Failed to fetch categories' });
+    }
+  }
+}
 
-  res.status(200).json({
-    success: true,
-    message: 'Blog updated successfully',
-    data: serializedBlog,
-  });
-});
-
-export const deleteBlog = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  await blogService.deleteBlog(id);
-
-  res.status(200).json({
-    success: true,
-    message: 'Blog deleted successfully',
-  });
-});
-
-export const getPublishedBlogs = catchAsync(async (req: Request, res: Response) => {
-  const filters = {
-    category: req.query.category as string,
-    search: req.query.search as string,
-    page: req.query.page ? parseInt(req.query.page as string) : 1,
-    limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
-  };
-
-  const result = await blogService.getPublishedBlogs(filters);
-
-  // Convert BigInt to string for JSON serialization
-  const serializedBlogs = result.blogs.map((blog) => ({
-    ...blog,
-    id: blog.id.toString(),
-  }));
-
-  res.status(200).json({
-    success: true,
-    data: serializedBlogs,
-    total: result.total,
-    limit: result.limit,
-    offset: result.offset,
-  });
-});
-
-export const getBlogCategories = catchAsync(async (req: Request, res: Response) => {
-  const categories = await blogService.getBlogCategories();
-
-  res.status(200).json({
-    success: true,
-    data: categories,
-  });
-});
+export const blogController = new BlogController();
+export default blogController;

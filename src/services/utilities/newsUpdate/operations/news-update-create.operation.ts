@@ -1,40 +1,40 @@
 import logger from '@/config/logger';
 import prisma from '@/config/prisma';
-import type { news_updates } from '@/generated/prisma';
+import type { NewsUpdate } from '@/generated/prisma';
 import { Decimal } from '@/generated/prisma/runtime/library';
 
 interface CreateNewsUpdateDto {
-  project_name: string;
+  projectName: string;
   sector?: string;
-  company_authority?: string;
+  companyAuthority?: string;
   location?: string;
-  value_cr?: number | Decimal;
+  valueCr?: number | Decimal;
   status?: string;
-  revised_budget?: number | Decimal;
-  revised_timeline?: string;
-  delay_reason?: string;
-  source_url: string;
-  source_type?: string;
-  summary_remarks?: string;
+  revisedBudget?: number | Decimal;
+  revisedTimeline?: string;
+  delayReason?: string;
+  sourceUrl: string;
+  sourceType?: string;
+  summaryRemarks?: string;
 }
 
 export class NewsUpdateCreateOperation {
-  static async create(data: CreateNewsUpdateDto): Promise<news_updates> {
+  static async create(data: CreateNewsUpdateDto): Promise<NewsUpdate> {
     try {
-      const newsUpdate = await prisma.news_updates.create({
+      const newsUpdate = await prisma.newsUpdate.create({
         data: {
-          project_name: data.project_name,
+          projectName: data.projectName,
           sector: data.sector || 'N/A',
-          company_authority: data.company_authority,
+          companyAuthority: data.companyAuthority,
           location: data.location,
-          value_cr: data.value_cr !== undefined ? new Decimal(data.value_cr) : new Decimal(0),
+          valueCr: data.valueCr !== undefined ? new Decimal(data.valueCr) : new Decimal(0),
           status: data.status,
-          revised_budget: data.revised_budget ? new Decimal(data.revised_budget) : undefined,
-          revised_timeline: data.revised_timeline,
-          delay_reason: data.delay_reason,
-          source_url: data.source_url,
-          source_type: data.source_type || 'News Media',
-          summary_remarks: data.summary_remarks || 'N/A',
+          revisedBudget: data.revisedBudget ? new Decimal(data.revisedBudget) : undefined,
+          revisedTimeline: data.revisedTimeline,
+          delayReason: data.delayReason,
+          sourceUrl: data.sourceUrl,
+          sourceType: data.sourceType || 'News Media',
+          summaryRemarks: data.summaryRemarks || 'N/A',
         },
       });
 
@@ -42,7 +42,7 @@ export class NewsUpdateCreateOperation {
       return newsUpdate;
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
-        logger.warn('Duplicate source URL detected', { url: data.source_url });
+        logger.warn('Duplicate source URL detected', { url: data.sourceUrl });
         throw new Error('News update with this source URL already exists');
       }
       logger.error('Error creating news update', { error, data });
@@ -52,8 +52,8 @@ export class NewsUpdateCreateOperation {
 
   static async bulkCreate(
     dataArray: CreateNewsUpdateDto[]
-  ): Promise<{ inserted: news_updates[]; duplicates: number }> {
-    const inserted: news_updates[] = [];
+  ): Promise<{ inserted: NewsUpdate[]; duplicates: number }> {
+    const inserted: NewsUpdate[] = [];
     let duplicates = 0;
 
     for (const data of dataArray) {

@@ -27,18 +27,16 @@ export const authenticateWorker = catchAsync(
       };
 
       // Check if it's a worker token
-      if (decoded.type !== 'worker') {
+      if (decoded.type !== 'profile') {
         throw new AppError('Invalid token type', 403);
       }
 
-      // Attach user info to request (map to the existing user structure)
+      // Attach user info to request (map to Express.AuthUser structure)
       req.user = {
         id: decoded.profileId,
-        email: decoded.phone, // Use phone as email since workers don't have email
-        username: decoded.phone,
         profileId: decoded.profileId,
         phone: decoded.phone,
-        type: decoded.type,
+        userType: 'profile',
       };
 
       next();

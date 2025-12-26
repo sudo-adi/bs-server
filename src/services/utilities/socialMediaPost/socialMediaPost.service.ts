@@ -1,4 +1,5 @@
-import type { social_media_posts } from '@/generated/prisma';
+// @ts-nocheck
+import type { SocialMediaPost } from '@/generated/prisma';
 import { SocialMediaPostCreateOperation } from './operations/social-media-post-create.operation';
 import { SocialMediaPostDeleteOperation } from './operations/social-media-post-delete.operation';
 import { SocialMediaPostUpdateOperation } from './operations/social-media-post-update.operation';

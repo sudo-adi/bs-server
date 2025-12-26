@@ -236,7 +236,7 @@ export const createProfileSchema = Joi.object({
     'date.max': 'Date of birth cannot be in the future',
   }),
   profile_photo_url: Joi.string().uri().max(500).optional().allow(null),
-  is_active: Joi.boolean().optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const updateProfileSchema = Joi.object({
@@ -261,7 +261,7 @@ export const updateProfileSchema = Joi.object({
   gender: Joi.string().max(20).optional().allow(null),
   date_of_birth: Joi.date().iso().max('now').optional().allow(null),
   profile_photo_url: Joi.string().uri().max(500).optional().allow(null),
-  is_active: Joi.boolean().optional(),
+  isActive: Joi.boolean().optional(),
   primary_skill_id: Joi.string().uuid().optional().allow(null),
 }).min(1); // At least one field must be provided
 
@@ -281,8 +281,8 @@ export const createTrainingBatchSchema = Joi.object({
   status: Joi.string().max(50).optional().allow(null),
   location: Joi.string().max(255).optional().allow(null),
   description: Joi.string().optional().allow(null),
-  skill_category_id: Joi.string().uuid().optional().allow(null),
-  created_by_user_id: Joi.string().uuid().optional().allow(null),
+  skillCategoryId: Joi.string().uuid().optional().allow(null),
+  created_by_userId: Joi.string().uuid().optional().allow(null),
 });
 
 export const updateTrainingBatchSchema = Joi.object({
@@ -297,14 +297,14 @@ export const updateTrainingBatchSchema = Joi.object({
   status: Joi.string().max(50).optional().allow(null),
   location: Joi.string().max(255).optional().allow(null),
   description: Joi.string().optional().allow(null),
-  skill_category_id: Joi.string().uuid().optional().allow(null),
+  skillCategoryId: Joi.string().uuid().optional().allow(null),
 }).min(1);
 
 // Batch Enrollment validation schemas
 export const createBatchEnrollmentSchema = Joi.object({
-  profile_id: Joi.string().uuid().required(),
+  profileId: Joi.string().uuid().required(),
   batch_id: Joi.string().uuid().required(),
-  enrolled_by_user_id: Joi.string().uuid().optional().allow(null),
+  enrolled_by_userId: Joi.string().uuid().optional().allow(null),
   enrollment_date: Joi.date().iso().optional().allow(null),
   status: Joi.string().max(50).optional().allow(null),
   notes: Joi.string().optional().allow(null),
@@ -323,7 +323,7 @@ export const createProjectSchema = Joi.object({
   project_code: Joi.string().max(50).optional(),
   project_name: Joi.string().min(1).max(255).required(),
   project_number: Joi.string().max(100).optional().allow(null),
-  employer_id: Joi.string().uuid().required(),
+  employerId: Joi.string().uuid().required(),
   location: Joi.string().max(255).optional().allow(null),
   contact_phone: Joi.string()
     .pattern(/^[6-9]\d{9}$/)
@@ -341,10 +341,10 @@ export const createProjectSchema = Joi.object({
   required_workers: Joi.number().integer().min(0).optional().allow(null),
   project_manager: Joi.string().max(255).optional().allow(null),
   description: Joi.string().optional().allow(null),
-  po_co_number: Joi.string().max(100).optional().allow(null),
-  is_active: Joi.boolean().optional(),
+  poCoNumber: Joi.string().max(100).optional().allow(null),
+  isActive: Joi.boolean().optional(),
   is_accommodation_provided: Joi.boolean().optional(),
-  created_by_user_id: Joi.string().uuid().optional().allow(null),
+  created_by_userId: Joi.string().uuid().optional().allow(null),
 });
 
 export const updateProjectSchema = Joi.object({
@@ -364,8 +364,8 @@ export const updateProjectSchema = Joi.object({
   required_workers: Joi.number().integer().min(0).optional().allow(null),
   project_manager: Joi.string().max(255).optional().allow(null),
   description: Joi.string().optional().allow(null),
-  po_co_number: Joi.string().max(100).optional().allow(null),
-  is_active: Joi.boolean().optional(),
+  poCoNumber: Joi.string().max(100).optional().allow(null),
+  isActive: Joi.boolean().optional(),
   is_accommodation_provided: Joi.boolean().optional(),
   approval_notes: Joi.string().optional().allow(null),
   rejection_reason: Joi.string().optional().allow(null),
@@ -373,8 +373,8 @@ export const updateProjectSchema = Joi.object({
 
 // Deployment validation schemas
 export const createDeploymentSchema = Joi.object({
-  project_id: Joi.string().uuid().required(),
-  profile_id: Joi.string().uuid().required(),
+  projectId: Joi.string().uuid().required(),
+  profileId: Joi.string().uuid().required(),
   deployment_date: Joi.date().iso().required(),
   expected_end_date: Joi.date()
     .iso()
@@ -387,7 +387,7 @@ export const createDeploymentSchema = Joi.object({
   actual_end_date: Joi.date().iso().optional().allow(null),
   status: Joi.string().max(50).optional().allow(null),
   performance_rating: Joi.number().integer().min(1).max(5).optional().allow(null),
-  deployed_by_user_id: Joi.string().uuid().optional().allow(null),
+  deployed_by_userId: Joi.string().uuid().optional().allow(null),
 });
 
 export const updateDeploymentSchema = Joi.object({
@@ -421,8 +421,8 @@ export const createEmployerSchema = Joi.object({
   registered_address: Joi.string().optional().allow(null),
   company_registration_number: Joi.string().max(100).optional().allow(null),
   gst_number: Joi.string().max(20).optional().allow(null),
-  is_active: Joi.boolean().optional(),
-  is_verified: Joi.boolean().optional(),
+  isActive: Joi.boolean().optional(),
+  isVerified: Joi.boolean().optional(),
 });
 
 export const updateEmployerSchema = Joi.object({
@@ -442,8 +442,8 @@ export const updateEmployerSchema = Joi.object({
   registered_address: Joi.string().optional().allow(null),
   company_registration_number: Joi.string().max(100).optional().allow(null),
   gst_number: Joi.string().max(20).optional().allow(null),
-  is_active: Joi.boolean().optional(),
-  is_verified: Joi.boolean().optional(),
+  isActive: Joi.boolean().optional(),
+  isVerified: Joi.boolean().optional(),
 }).min(1);
 
 // Pagination validation schema
@@ -481,7 +481,7 @@ export const updateAddressSchema = Joi.object({
 
 // Profile Skill validation schemas
 export const createProfileSkillSchema = Joi.object({
-  skill_category_id: Joi.string().uuid().required(),
+  skillCategoryId: Joi.string().uuid().required(),
   years_of_experience: Joi.number().integer().min(0).optional().allow(null),
   is_primary: Joi.boolean().optional(),
 });
@@ -601,6 +601,6 @@ export const createProfileBlacklistSchema = Joi.object({
 });
 
 export const updateProfileBlacklistSchema = Joi.object({
-  is_active: Joi.boolean().required(),
+  isActive: Joi.boolean().required(),
   reason: Joi.string().optional().allow(null),
 });

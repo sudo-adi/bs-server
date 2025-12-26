@@ -8,844 +8,1080 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model activity_logs {
-  action     String    @db.VarChar(100)
-  module     String    @db.VarChar(100)
-  record_id  String?
-  old_value  String?
-  new_value  String?
-  ip_address String?   @db.VarChar(45)
-  user_agent String?
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id    String?   @db.Uuid
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+// =============================================================================
+// PROFILE DOMAIN - Core user/worker/candidate profiles
+// =============================================================================
+
+model Profile {
+  id                             String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateCode                  String?
+  workerCode                     String?
+  phone                          String?
+  altPhone                       String?
+  email                          String?
+  firstName                      String?
+  middleName                     String?
+  lastName                       String?
+  fathersName                    String?
+  gender                         String?
+  dateOfBirth                    DateTime?                    @db.Date
+  isActive                       Boolean?
+  createdAt                      DateTime?                    @db.Timestamptz(6)
+  updatedAt                      DateTime?                    @db.Timestamptz(6)
+  profilePhotoURL                String?
+  deletedAt                      DateTime?                    @db.Timestamptz(6)
+  deletedByProfileId             String?                      @db.Uuid
+  emergencyContactName           String?
+  emergencyContactNumber         String?
+  nomineeName                    String?
+  bloodGroup                     String?
+  candidateApprovedAt            DateTime?                    @db.Timestamptz(6)
+  candidateApprovedByProfileId   String?                      @db.Uuid
+  workerConvertedAt              DateTime?                    @db.Timestamptz(6)
+  candidateCodeAssignedAt        DateTime?                    @db.Timestamptz(6)
+  workerCodeAssignedAt           DateTime?                    @db.Timestamptz(6)
+  passwordHash                   String?
+  undeletedAt                    DateTime?                    @db.Timestamptz(6)
+  undeletedByProfileId           String?                      @db.Uuid
+  deactivatedAt                  DateTime?                    @db.Timestamptz(6)
+  deactivatedByProfileId         String?                      @db.Uuid
+  reactivatedAt                  DateTime?                    @db.Timestamptz(6)
+  reactivatedByProfileId         String?                      @db.Uuid
+  currentStage                   String?
+  metadata                       Json?
+  isVerified                     Boolean?
+  verifiedAt                     DateTime?                    @db.Timestamptz(6)
+  verifiedByProfileId            String?                      @db.Uuid
+  workerType                     String?
+  profileType                    String?
+  activityLogs                   ActivityLog[]
+  calendarEvents                 CalendarEvent[]
+  employerStatusHistory          EmployerStatusHistory[]
+  deletedEmployers               Employer[]                   @relation("employers_deletedByProfileIdToprofiles")
+  verifiedEmployers              Employer[]                   @relation("employers_verifiedByProfileIdToprofiles")
+  notificationPreferences        NotificationPreference[]
+  receivedNotifications          Notification[]               @relation("notifications_recipientProfileIdToprofiles")
+  sentNotifications              Notification[]               @relation("notifications_senderProfileIdToprofiles")
+  addresses                      ProfileAddress[]
+  bankAccounts                   ProfileBankAccount[]
+  assignedCategoryAssignments    ProfileCategoryAssignment[]  @relation("profile_category_assignments_assignedByProfileIdToprofiles")
+  categoryAssignments            ProfileCategoryAssignment[]  @relation("profile_category_assignments_profileIdToprofiles")
+  documents                      ProfileDocument[]            @relation("profile_documents_profileIdToprofiles")
+  uploadedDocuments              ProfileDocument[]            @relation("profile_documents_uploadedByProfileIdToprofiles")
+  identity                       ProfileIdentity?
+  createdInteractions            ProfileInteraction[]         @relation("profile_interactions_createdByProfileIdToprofiles")
+  interactions                   ProfileInteraction[]         @relation("profile_interactions_profileIdToprofiles")
+  qualifications                 ProfileQualification[]
+  assignedRoleAssignments        ProfileRoleAssignment[]      @relation("profile_role_assignments_assignedByProfileIdToprofiles")
+  roleAssignments                ProfileRoleAssignment[]      @relation("profile_role_assignments_profileIdToprofiles")
+  skills                         ProfileSkill[]
+  changedStageHistory            ProfileStageHistory[]        @relation("profile_stage_history_changedByProfileIdToprofiles")
+  stageHistory                   ProfileStageHistory[]        @relation("profile_stage_history_profileIdToprofiles")
+  issuedCertificates             ProfileTrainingCertificate[] @relation("profile_training_certificates_issuedByProfileIdToprofiles")
+  trainingCertificates           ProfileTrainingCertificate[] @relation("profile_training_certificates_profileIdToprofiles")
+  candidateApprovedByProfile     Profile?                     @relation("profiles_candidateApprovedByProfileIdToprofiles", fields: [candidateApprovedByProfileId], references: [id])
+  approvedCandidates             Profile[]                    @relation("profiles_candidateApprovedByProfileIdToprofiles")
+  deactivatedByProfile           Profile?                     @relation("profiles_deactivatedByProfileIdToprofiles", fields: [deactivatedByProfileId], references: [id])
+  deactivatedProfiles            Profile[]                    @relation("profiles_deactivatedByProfileIdToprofiles")
+  deletedByProfile               Profile?                     @relation("profiles_deletedByProfileIdToprofiles", fields: [deletedByProfileId], references: [id])
+  deletedProfiles                Profile[]                    @relation("profiles_deletedByProfileIdToprofiles")
+  reactivatedByProfile           Profile?                     @relation("profiles_reactivatedByProfileIdToprofiles", fields: [reactivatedByProfileId], references: [id])
+  reactivatedProfiles            Profile[]                    @relation("profiles_reactivatedByProfileIdToprofiles")
+  undeletedByProfile             Profile?                     @relation("profiles_undeletedByProfileIdToprofiles", fields: [undeletedByProfileId], references: [id])
+  undeletedProfiles              Profile[]                    @relation("profiles_undeletedByProfileIdToprofiles")
+  verifiedByProfile              Profile?                     @relation("profiles_verifiedByProfileIdToprofiles", fields: [verifiedByProfileId], references: [id])
+  verifiedProfiles               Profile[]                    @relation("profiles_verifiedByProfileIdToprofiles")
+  languages                      ProfileLanguage[]
+  projectDocuments               ProjectDocument[]
+  reviewedProjectRequests        ProjectRequest[]
+  changedProjectStageHistory     ProjectStageHistory[]
+  assignedWorkerAssignments      ProjectWorkerAssignment[]    @relation("project_worker_assignments_assignedByProfileIdToprofiles")
+  workerAssignments              ProjectWorkerAssignment[]    @relation("project_worker_assignments_profileIdToprofiles")
+  removedWorkerAssignments       ProjectWorkerAssignment[]    @relation("project_worker_assignments_removedByProfileIdToprofiles")
+  sharedWorkerAssignments        ProjectWorkerAssignment[]    @relation("project_worker_assignments_sharedByProfileIdToprofiles")
+  createdProjects                Project[]                    @relation("projects_createdByProfileIdToprofiles")
+  deletedProjects                Project[]                    @relation("projects_deletedByProfileIdToprofiles")
+  managedProjects                Project[]                    @relation("projects_projectManagerProfileIdToprofiles")
+  enrolledByBatchEnrollments     TrainingBatchEnrollment[]    @relation("training_batch_enrollments_enrolledByProfileIdToprofiles")
+  forceCompletedBatchEnrollments TrainingBatchEnrollment[]    @relation("training_batch_enrollments_forceCompletedByProfileIdToprofiles")
+  batchEnrollments               TrainingBatchEnrollment[]    @relation("training_batch_enrollments_profileIdToprofiles")
+  assignedAsTrainer              TrainingBatchTrainer[]       @relation("training_batch_trainers_assignedByProfileIdToprofiles")
+  trainerAssignments             TrainingBatchTrainer[]       @relation("training_batch_trainers_trainerProfileIdToprofiles")
+  createdTrainingBatches         TrainingBatch[]
+  createdTrainingHistory         TrainingHistory[]            @relation("training_history_createdByProfileIdToprofiles")
+  trainingHistory                TrainingHistory[]            @relation("training_history_profileIdToprofiles")
+
+  @@map("profiles")
 }
 
-model addresses {
-  address_type    String?   @default("permanent") @db.VarChar(50)
-  house_number    String?   @db.VarChar(100)
-  village_or_city String?   @db.VarChar(255)
-  district        String?   @db.VarChar(255)
-  state           String?   @db.VarChar(255)
-  postal_code     String?   @db.VarChar(10)
-  landmark        String?   @db.VarChar(255)
-  police_station  String?   @db.VarChar(255)
-  post_office     String?   @db.VarChar(255)
-  is_current      Boolean?  @default(false)
-  created_at      DateTime? @default(now()) @db.Timestamp(6)
-  updated_at      DateTime? @default(now()) @db.Timestamp(6)
-  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id      String?   @db.Uuid
-  profiles        profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model ProfileIdentity {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId                 String    @unique @db.Uuid
+  // Aadhaar
+  aadhaarNumber             String?
+  aadhaarDocumentId         String?   @db.Uuid
+  // PAN
+  panNumber                 String?
+  panDocumentId             String?   @db.Uuid
+  // ESIC
+  esicNumber                String?
+  esicDocumentId            String?   @db.Uuid
+  // UAN
+  uanNumber                 String?
+  uanDocumentId             String?   @db.Uuid
+  // PF
+  pfAccountNumber           String?
+  pfDocumentId              String?   @db.Uuid
+  // Health Insurance
+  healthInsurancePolicy     String?
+  healthInsuranceProvider   String?
+  healthInsuranceExpiry     DateTime? @db.Date
+  healthInsuranceDocumentId String?   @db.Uuid
+  // Timestamps
+  createdAt                 DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt                 DateTime  @db.Timestamptz(6)
+  profile                   Profile   @relation(fields: [profileId], references: [id])
+
+  @@map("profile_identity")
 }
 
-model bank_accounts {
-  account_holder_name String    @db.VarChar(255)
-  account_number      String    @db.VarChar(50)
-  ifsc_code           String    @db.VarChar(20)
-  bank_name           String?   @db.VarChar(255)
-  branch_name         String?   @db.VarChar(255)
-  account_type        String?   @default("savings") @db.VarChar(50)
-  is_primary          Boolean?  @default(false)
-  is_verified         Boolean?  @default(false)
-  verification_status String?   @default("pending") @db.VarChar(50)
-  verified_at         DateTime? @db.Timestamp(6)
-  created_at          DateTime? @default(now()) @db.Timestamp(6)
-  updated_at          DateTime? @default(now()) @db.Timestamp(6)
-  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id          String?   @db.Uuid
-  verified_by_user_id String?   @db.Uuid
-  profiles            profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users               users?    @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+model ProfileAddress {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  addressType   String?
+  houseNumber   String?
+  villageOrCity String?
+  district      String?
+  state         String?
+  postalCode    String?
+  landmark      String?
+  policeStation String?
+  postOffice    String?
+  profileId     String?          @db.Uuid
+  documentId    String?          @db.Uuid
+  profile       Profile?         @relation(fields: [profileId], references: [id])
+  document      ProfileDocument? @relation(fields: [documentId], references: [id])
+  createdAt     DateTime?        @db.Timestamptz(6)
+  updatedAt     DateTime?        @db.Timestamptz(6)
+
+  @@map("profile_addresses")
 }
 
-model batch_enrollments {
-  enrollment_date       DateTime?         @default(now()) @db.Timestamp(6)
-  completion_date       DateTime?         @db.Date
-  status                String?           @default("enrolled") @db.VarChar(50)
-  attendance_percentage Decimal?          @db.Decimal(5, 2)
-  score                 Decimal?          @db.Decimal(5, 2)
-  notes                 String?
-  created_at            DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at            DateTime?         @default(now()) @db.Timestamp(6)
-  id                    String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id            String?           @db.Uuid
-  batch_id              String?           @db.Uuid
-  enrolled_by_user_id   String?           @db.Uuid
-  training_batches      training_batches? @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                 users?            @relation(fields: [enrolled_by_user_id], references: [id], onUpdate: NoAction)
-  profiles              profiles?         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  documents             documents[]
+model ProfileBankAccount {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountHolderName String?
+  accountNumber     String?
+  ifscCode          String?
+  bankName          String?
+  branchName        String?
+  accountType       String?
+  isPrimary         Boolean?
+  createdAt         DateTime?        @db.Timestamptz(6)
+  updatedAt         DateTime?        @db.Timestamptz(6)
+  profileId         String?          @db.Uuid
+  documentId        String?          @db.Uuid
+  profile           Profile?         @relation(fields: [profileId], references: [id])
+  document          ProfileDocument? @relation(fields: [documentId], references: [id])
 
-  @@unique([profile_id, batch_id], map: "uq_profile_batch")
-  @@index([batch_id, status], map: "idx_batch_enrollments_batch_status")
-  @@index([profile_id, status], map: "idx_batch_enrollments_profile_status")
+  @@map("profile_bank_accounts")
 }
 
-model blogs {
-  id                 BigInt   @id @default(autoincrement())
-  created_at         DateTime @default(now()) @db.Timestamptz(6)
-  title              String?  @db.VarChar
-  content            String?  @db.VarChar
-  image_url          String?  @db.VarChar
-  category           String?  @db.VarChar
-  created_by_user_id String?  @db.Uuid
-  users              users?   @relation(fields: [created_by_user_id], references: [id], onDelete: Cascade)
+model ProfileStageHistory {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId          String?   @db.Uuid
+  previousStage      String?
+  newStage           String?
+  reason             String?
+  metadata           Json?
+  changedByProfileId String?   @db.Uuid
+  changedAt          DateTime? @db.Timestamptz(6)
+  changedByProfile   Profile?  @relation("profile_stage_history_changedByProfileIdToprofiles", fields: [changedByProfileId], references: [id])
+  profile            Profile?  @relation("profile_stage_history_profileIdToprofiles", fields: [profileId], references: [id])
+
+  @@map("profile_stage_history")
 }
 
-model document_categories {
-  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name        String      @unique @db.VarChar
-  description String?
-  is_active   Boolean?    @default(true)
-  documents   documents[]
+// -----------------------------------------------------------------------------
+// Profile Skills & Categories
+// -----------------------------------------------------------------------------
+
+model ProfileSkill {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  yearsOfExperience Int?
+  isPrimary         Boolean?
+  createdAt         DateTime?      @db.Timestamptz(6)
+  updatedAt         DateTime?      @db.Timestamptz(6)
+  profileId         String?        @db.Uuid
+  skillCategoryId   String?        @db.Uuid
+  profile           Profile?       @relation(fields: [profileId], references: [id])
+  skillCategory     SkillCategory? @relation(fields: [skillCategoryId], references: [id])
+
+  @@map("profile_skills")
 }
 
-model documents {
-  document_number                            String?              @db.VarChar(100)
-  file_name                                  String               @db.VarChar(255)
-  file_url                                   String               @db.VarChar(500)
-  file_size                                  Int?
-  verification_status                        String?              @default("pending") @db.VarChar(50)
-  verified_at                                DateTime?            @db.Timestamp(6)
-  uploaded_at                                DateTime?            @default(now()) @db.Timestamp(6)
-  expiry_date                                DateTime?            @db.Date
-  created_at                                 DateTime?            @default(now()) @db.Timestamp(6)
-  id                                         String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id                                 String?              @db.Uuid
-  uploaded_by_user_id                        String?              @db.Uuid
-  verified_by_user_id                        String?              @db.Uuid
-  document_category_id                       String?              @db.Uuid
-  qualification_id                           String?              @db.Uuid
-  batch_enrollment_id                        String?              @db.Uuid
-  batch_enrollments                          batch_enrollments?   @relation(fields: [batch_enrollment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  document_categories                        document_categories? @relation(fields: [document_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  profiles                                   profiles?            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  qualifications                             qualifications?      @relation(fields: [qualification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_documents_uploaded_by_user_idTousers users?               @relation("documents_uploaded_by_user_idTousers", fields: [uploaded_by_user_id], references: [id], onUpdate: NoAction)
-  users_documents_verified_by_user_idTousers users?               @relation("documents_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+model SkillCategory {
+  id                   String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String?
+  categoryType         String?
+  createdAt            DateTime?                    @db.Timestamptz(6)
+  updatedAt            DateTime?                    @db.Timestamptz(6)
+  workerType           String?                      @db.VarChar(20)
+  profileSkills        ProfileSkill[]
+  requestRequirements  ProjectRequestRequirement[]
+  resourceRequirements ProjectResourceRequirement[]
+
+  @@index([workerType], map: "idx_skill_categories_worker_type")
+  @@map("skill_categories")
 }
 
-model employer_authorized_persons {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  employer_id String    @db.Uuid
-  name        String?   @db.VarChar
-  designation String?   @db.VarChar
-  email       String?   @db.VarChar
-  phone       String?   @db.VarChar
+model ProfileCategory {
+  id          String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String?
+  workerType  String?                     @db.VarChar(20)
+  createdAt   DateTime?                   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime?                   @default(now()) @db.Timestamptz(6)
+  assignments ProfileCategoryAssignment[]
+
+  @@index([workerType], map: "idx_profile_categories_worker_type")
+  @@map("profile_categories")
+}
+
+model ProfileCategoryAssignment {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId           String?          @db.Uuid
+  categoryId          String?          @db.Uuid
+  assignedAt          DateTime?        @db.Timestamptz(6)
+  assignedByProfileId String?          @db.Uuid
+  metadata            Json?
+  assignedByProfile   Profile?         @relation("profile_category_assignments_assignedByProfileIdToprofiles", fields: [assignedByProfileId], references: [id])
+  category            ProfileCategory? @relation(fields: [categoryId], references: [id])
+  profile             Profile?         @relation("profile_category_assignments_profileIdToprofiles", fields: [profileId], references: [id])
+
+  @@index([categoryId], map: "idx_profile_category_assignments_category_id")
+  @@index([profileId], map: "idx_profile_category_assignments_profile_id")
+  @@map("profile_category_assignments")
+}
+
+// -----------------------------------------------------------------------------
+// Profile Qualifications
+// -----------------------------------------------------------------------------
+
+model ProfileQualificationType {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String?
+  qualifications ProfileQualification[]
+
+  @@map("profile_qualification_types")
+}
+
+model ProfileQualification {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  institutionName     String?
+  fieldOfStudy        String?
+  yearOfCompletion    Int?
+  percentageOrGrade   String?
+  createdAt           DateTime?                 @db.Timestamptz(6)
+  profileId           String?                   @db.Uuid
+  qualificationTypeId String?                   @db.Uuid
+  documentId          String?                   @db.Uuid
+  document            ProfileDocument?          @relation(fields: [documentId], references: [id])
+  profile             Profile?                  @relation(fields: [profileId], references: [id])
+  qualificationType   ProfileQualificationType? @relation(fields: [qualificationTypeId], references: [id])
+
+  @@map("profile_qualifications")
+}
+
+// -----------------------------------------------------------------------------
+// Profile Documents
+// -----------------------------------------------------------------------------
+
+model DocumentCategory {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String?
+  description   String?
+  createdAt     DateTime?      @db.Timestamptz(6)
+  updatedAt     DateTime?      @db.Timestamptz(6)
+  documentTypes DocumentType[]
+
+  @@map("document_categories")
+}
+
+model DocumentType {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId       String?           @db.Uuid
+  name             String?
+  createdAt        DateTime?         @db.Timestamptz(6)
+  updatedAt        DateTime?         @db.Timestamptz(6)
+  documentCategory DocumentCategory? @relation(fields: [categoryId], references: [id])
+  profileDocuments ProfileDocument[]
+
+  @@map("document_types")
+}
+
+model ProfileDocument {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId           String?                @db.Uuid
+  documentUrl         String?
+  uploadedByProfileId String?                @db.Uuid
+  createdAt           DateTime?              @db.Timestamptz(6)
+  updatedAt           DateTime?              @db.Timestamptz(6)
+  documentNumber      String?                @db.VarChar(100)
+  documentTypeId      String?                @db.Uuid
+  documentType        DocumentType?          @relation(fields: [documentTypeId], references: [id])
+  profile             Profile?               @relation("profile_documents_profileIdToprofiles", fields: [profileId], references: [id])
+  uploadedByProfile   Profile?               @relation("profile_documents_uploadedByProfileIdToprofiles", fields: [uploadedByProfileId], references: [id])
+  qualifications      ProfileQualification[]
+  addresses           ProfileAddress[]
+  bankAccounts        ProfileBankAccount[]
+
+  @@map("profile_documents")
+}
+
+// -----------------------------------------------------------------------------
+// Profile Languages
+// -----------------------------------------------------------------------------
+
+model Language {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime?         @db.Timestamptz(6)
+  updatedAt        DateTime?         @db.Timestamptz(6)
+  name             String?
+  profileLanguages ProfileLanguage[]
+
+  @@map("languages")
+}
+
+model ProfileLanguage {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId  String?   @db.Uuid
+  languageId String?   @db.Uuid
+  createdAt  DateTime? @db.Timestamptz(6)
+  language   Language? @relation(fields: [languageId], references: [id])
+  profile    Profile?  @relation(fields: [profileId], references: [id])
+
+  @@unique([profileId, languageId])
+  @@map("profiles_languages")
+}
+
+// -----------------------------------------------------------------------------
+// Profile Interactions
+// -----------------------------------------------------------------------------
+
+model ProfileInteractionType {
+  id           String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type         String?
+  interactions ProfileInteraction[]
+
+  @@map("profile_interaction_types")
+}
+
+model ProfileInteraction {
+  id                 String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interactionDate    DateTime?               @db.Timestamptz(6)
+  subject            String?
+  description        String?
+  createdAt          DateTime?               @db.Timestamptz(6)
+  updatedAt          DateTime?               @db.Timestamptz(6)
+  profileId          String?                 @db.Uuid
+  createdByProfileId String?                 @db.Uuid
+  interactionTypeId  String?                 @db.Uuid
+  createdByProfile   Profile?                @relation("profile_interactions_createdByProfileIdToprofiles", fields: [createdByProfileId], references: [id])
+  interactionType    ProfileInteractionType? @relation(fields: [interactionTypeId], references: [id])
+  profile            Profile?                @relation("profile_interactions_profileIdToprofiles", fields: [profileId], references: [id])
+
+  @@map("profile_interactions")
+}
+
+// -----------------------------------------------------------------------------
+// Profile Roles & Permissions
+// -----------------------------------------------------------------------------
+
+model ProfileRole {
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String?
+  createdAt   DateTime?               @db.Timestamptz(6)
+  updatedAt   DateTime?               @db.Timestamptz(6)
+  assignments ProfileRoleAssignment[]
+  permissions ProfileRolePermission[]
+
+  @@map("profile_roles")
+}
+
+model ProfileRolePermission {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String?      @db.Uuid
+  moduleName   String?
+  canView      Boolean?
+  canManage    Boolean?
+  canExport    Boolean?
+  isSuperAdmin Boolean?
+  createdAt    DateTime?    @db.Timestamptz(6)
+  updatedAt    DateTime?    @db.Timestamptz(6)
+  role         ProfileRole? @relation(fields: [roleId], references: [id])
+
+  @@map("profile_role_permissions")
+}
+
+model ProfileRoleAssignment {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId           String?      @db.Uuid
+  roleId              String?      @db.Uuid
+  assignedByProfileId String?      @db.Uuid
+  assignedAt          DateTime?    @db.Timestamptz(6)
+  revokedAt           DateTime?    @db.Timestamptz(6)
+  revokedByProfileId  String?      @db.Uuid
+  assignedByProfile   Profile?     @relation("profile_role_assignments_assignedByProfileIdToprofiles", fields: [assignedByProfileId], references: [id])
+  profile             Profile?     @relation("profile_role_assignments_profileIdToprofiles", fields: [profileId], references: [id])
+  role                ProfileRole? @relation(fields: [roleId], references: [id])
+
+  @@map("profile_role_assignments")
+}
+
+// =============================================================================
+// EMPLOYER DOMAIN
+// =============================================================================
+
+model Employer {
+  id                        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employerCode              String?
+  companyName               String?
+  clientName                String?
+  email                     String?
+  passwordHash              String?
+  phone                     String?
+  altPhone                  String?
+  registeredAddress         String?
+  companyRegistrationNumber String?
+  gstNumber                 String?
+  isActive                  Boolean?
+  isVerified                Boolean?
+  verifiedAt                DateTime?                  @db.Timestamptz(6)
+  lastLogin                 DateTime?                  @db.Timestamptz(6)
+  createdAt                 DateTime?                  @db.Timestamptz(6)
+  updatedAt                 DateTime?                  @db.Timestamptz(6)
+  verifiedByProfileId       String?                    @db.Uuid
+  deletedAt                 DateTime?                  @db.Timestamptz(6)
+  deletedByProfileId        String?                    @db.Uuid
+  status                    String?
+  city                      String?
+  district                  String?
+  landmark                  String?
+  postalCode                String?
+  state                     String?
+  logoUrl                   String?
+  authorizedPersons         EmployerAuthorizedPerson[]
+  statusHistory             EmployerStatusHistory[]
+  deletedByProfile          Profile?                   @relation("employers_deletedByProfileIdToprofiles", fields: [deletedByProfileId], references: [id])
+  verifiedByProfile         Profile?                   @relation("employers_verifiedByProfileIdToprofiles", fields: [verifiedByProfileId], references: [id])
+  projectRequests           ProjectRequest[]
+  projects                  Project[]
+
+  @@map("employers")
+}
+
+model EmployerAuthorizedPerson {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employerId  String?   @db.Uuid
+  name        String?
+  designation String?
+  email       String?
+  phone       String?
   address     String?
-  is_primary  Boolean?  @default(true)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
-  employers   employers @relation(fields: [employer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  isPrimary   Boolean?
+  createdAt   DateTime? @db.Timestamptz(6)
+  updatedAt   DateTime? @db.Timestamptz(6)
+  employer    Employer? @relation(fields: [employerId], references: [id])
 
-  @@index([employer_id], map: "idx_employer_authorized_persons_employer_id")
+  @@map("employer_authorized_persons")
 }
 
-model employers {
-  employer_code                              String                        @unique @db.VarChar(50)
-  company_name                               String                        @db.VarChar(255)
-  client_name                                String                        @db.VarChar(255)
-  email                                      String                        @unique @db.VarChar(255)
-  password_hash                              String                        @db.VarChar(255)
-  phone                                      String                        @db.VarChar(20)
-  alt_phone                                  String?                       @db.VarChar(20)
-  registered_address                         String?
-  company_registration_number                String?                       @db.VarChar(100)
-  gst_number                                 String?                       @db.VarChar(20)
-  is_active                                  Boolean?                      @default(true)
-  is_verified                                Boolean?                      @default(false)
-  verified_at                                DateTime?                     @db.Timestamp(6)
-  last_login                                 DateTime?                     @db.Timestamp(6)
-  created_at                                 DateTime?                     @default(now()) @db.Timestamp(6)
-  updated_at                                 DateTime?                     @default(now()) @db.Timestamp(6)
-  id                                         String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  verified_by_user_id                        String?                       @db.Uuid
-  deleted_at                                 DateTime?                     @db.Timestamp(6)
-  deleted_by_user_id                         String?                       @db.Uuid
-  employer_authorized_persons                employer_authorized_persons[]
-  users_employers_deleted_by_user_idTousers  users?                        @relation("employers_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_employers_verified_by_user_idTousers users?                        @relation("employers_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
-  project_requests                           project_requests[]
-  projects                                   projects[]
+model EmployerStatusHistory {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employerId         String?   @db.Uuid
+  previousStatus     String?
+  newStatus          String?
+  changedByProfileId String?   @db.Uuid
+  changedAt          DateTime? @db.Timestamptz(6)
+  reason             String?
+  metadata           Json?
+  changedByProfile   Profile?  @relation(fields: [changedByProfileId], references: [id])
+  employer           Employer? @relation(fields: [employerId], references: [id])
+
+  @@map("employer_status_history")
 }
 
-model interaction_types {
-  id           String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name         String         @unique @db.VarChar
-  is_active    Boolean?       @default(true)
-  interactions interactions[]
+// =============================================================================
+// PROJECT DOMAIN
+// =============================================================================
+
+model Project {
+  id                      String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectCode             String?                      @unique
+  name                    String?
+  location                String?
+  contactPhone            String?
+  deploymentDate          DateTime?                    @db.Date
+  awardDate               DateTime?                    @db.Date
+  startDate               DateTime?                    @db.Date
+  endDate                 DateTime?                    @db.Date
+  revisedCompletionDate   DateTime?                    @db.Date
+  projectManagerProfileId String?                      @db.Uuid
+  description             String?
+  poCoNumber              String?
+  isActive                Boolean?
+  isAccommodationProvided Boolean?
+  createdAt               DateTime?                    @db.Timestamptz(6)
+  updatedAt               DateTime?                    @db.Timestamptz(6)
+  employerId              String?                      @db.Uuid
+  createdByProfileId      String?                      @db.Uuid
+  deletedAt               DateTime?                    @db.Timestamptz(6)
+  deletedByProfileId      String?                      @db.Uuid
+  actualStartDate         DateTime?                    @db.Date
+  actualEndDate           DateTime?                    @db.Date
+  terminationDate         DateTime?                    @db.Date
+  completionDate          DateTime?                    @db.Date
+  onHoldAttributableTo    String?
+  shortCloseDate          DateTime?                    @db.Date
+  stage                   String?
+  stageChangeReason       String?
+  stageChangedAt          DateTime?                    @db.Timestamptz(6)
+  documents               ProjectDocument[]
+  financials              ProjectFinancial[]
+  resourceRequirements    ProjectResourceRequirement[]
+  stageHistory            ProjectStageHistory[]
+  workerAssignments       ProjectWorkerAssignment[]
+  createdByProfile        Profile?                     @relation("projects_createdByProfileIdToprofiles", fields: [createdByProfileId], references: [id])
+  deletedByProfile        Profile?                     @relation("projects_deletedByProfileIdToprofiles", fields: [deletedByProfileId], references: [id])
+  employer                Employer?                    @relation(fields: [employerId], references: [id])
+  projectManager          Profile?                     @relation("projects_projectManagerProfileIdToprofiles", fields: [projectManagerProfileId], references: [id])
+
+  @@map("projects")
 }
 
-model interactions {
-  interaction_date    DateTime?          @default(now()) @db.Timestamp(6)
-  subject             String?            @db.VarChar(255)
-  description         String?
-  outcome             String?            @db.VarChar(100)
-  next_follow_up_date DateTime?          @db.Date
-  created_at          DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at          DateTime?          @default(now()) @db.Timestamp(6)
-  id                  String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id          String?            @db.Uuid
-  created_by_user_id  String?            @db.Uuid
-  interaction_type_id String?            @db.Uuid
-  profiles            profiles?          @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_interactions_profiles")
-  users               users?             @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
-  interaction_types   interaction_types? @relation(fields: [interaction_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model ProjectStageHistory {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId          String?           @db.Uuid
+  previousStage      String?
+  newStage           String?
+  reason             String?
+  metadata           Json?
+  changedByProfileId String?           @db.Uuid
+  changedAt          DateTime?         @db.Timestamptz(6)
+  documents          ProjectDocument[]
+  changedByProfile   Profile?          @relation(fields: [changedByProfileId], references: [id])
+  project            Project?          @relation(fields: [projectId], references: [id])
+
+  @@map("project_stage_history")
 }
 
-model news_updates {
-  project_name      String    @db.VarChar(500)
-  sector            String    @default("N/A") @db.VarChar(200)
-  company_authority String?   @db.VarChar(300)
-  location          String?   @db.VarChar(300)
-  value_cr          Decimal   @default(0) @db.Decimal(15, 2)
-  status            String?   @db.VarChar(100)
-  revised_budget    Decimal?  @db.Decimal(15, 2)
-  revised_timeline  String?   @db.VarChar(200)
-  delay_reason      String?
-  source_url        String    @unique @db.VarChar(1000)
-  source_type       String?   @db.VarChar(100)
-  summary_remarks   String    @default("N/A")
-  scraped_date      DateTime? @default(now()) @db.Timestamp(6)
-  created_at        DateTime? @default(now()) @db.Timestamp(6)
-  updated_at        DateTime? @default(now()) @db.Timestamp(6)
-  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+model ProjectDocument {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId           String?              @db.Uuid
+  documentType        String?
+  documentUrl         String?
+  fileName            String?
+  uploadedByProfileId String?              @db.Uuid
+  createdAt           DateTime?            @db.Timestamptz(6)
+  updatedAt           DateTime?            @db.Timestamptz(6)
+  stageHistoryId      String?              @db.Uuid
+  project             Project?             @relation(fields: [projectId], references: [id])
+  stageHistory        ProjectStageHistory? @relation(fields: [stageHistoryId], references: [id])
+  uploadedByProfile   Profile?             @relation(fields: [uploadedByProfileId], references: [id])
 
-  @@index([created_at], map: "idx_news_updates_created_at")
-  @@index([scraped_date], map: "idx_news_updates_scraped_date")
-  @@index([sector], map: "idx_news_updates_sector")
-  @@index([source_url], map: "idx_news_updates_source_url")
-  @@index([status], map: "idx_news_updates_status")
-  @@index([value_cr], map: "idx_news_updates_value_cr")
+  @@map("project_documents")
 }
 
-model profile_blacklist {
-  id                                                      String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id                                              String    @db.Uuid
-  reason                                                  String?
-  blacklisted_at                                          DateTime? @default(now()) @db.Timestamp(6)
-  blacklisted_by_user_id                                  String?   @db.Uuid
-  unblacklisted_at                                        DateTime? @db.Timestamp(6)
-  unblacklisted_by_user_id                                String?   @db.Uuid
-  is_active                                               Boolean?  @default(true)
-  created_at                                              DateTime? @default(now()) @db.Timestamp(6)
-  users_profile_blacklist_blacklisted_by_user_idTousers   users?    @relation("profile_blacklist_blacklisted_by_user_idTousers", fields: [blacklisted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  profiles                                                profiles  @relation(fields: [profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_profile_blacklist_unblacklisted_by_user_idTousers users?    @relation("profile_blacklist_unblacklisted_by_user_idTousers", fields: [unblacklisted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model ProjectFinancial {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId            String?   @db.Uuid
+  contractValue        Decimal?  @db.Decimal
+  revisedContractValue Decimal?  @db.Decimal
+  variationOrderValue  Decimal?  @db.Decimal
+  actualCostIncurred   Decimal?  @db.Decimal
+  miscCost             Decimal?  @db.Decimal
+  budget               Decimal?  @db.Decimal
+  createdAt            DateTime? @db.Timestamptz(6)
+  updatedAt            DateTime? @db.Timestamptz(6)
+  project              Project?  @relation(fields: [projectId], references: [id])
 
-  @@index([is_active], map: "idx_profile_blacklist_is_active")
-  @@index([profile_id], map: "idx_profile_blacklist_profile_id")
+  @@map("project_financials")
 }
 
-model profile_salary_slips {
-  id                  Int       @id @default(autoincrement())
-  profile_id          String    @db.Uuid
-  salary_month        Int
-  salary_year         Int
-  slip_document_url   String?   @db.VarChar(1000)
-  slip_file_name      String?   @db.VarChar(255)
-  payment_date        DateTime? @db.Date
-  payment_status      String?   @default("pending") @db.VarChar(50)
-  payment_reference   String?   @db.VarChar(200)
-  payment_mode        String?   @db.VarChar(50)
-  notes               String?
-  uploaded_by_user_id String?   @db.Uuid
-  approved_by_user_id String?   @db.Uuid
-  created_at          DateTime? @default(now()) @db.Timestamp(6)
-  updated_at          DateTime? @default(now()) @db.Timestamp(6)
-  profiles            profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model ProjectResourceRequirement {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requiredCount   Int?
+  createdAt       DateTime?      @db.Timestamptz(6)
+  updatedAt       DateTime?      @db.Timestamptz(6)
+  projectId       String?        @db.Uuid
+  skillCategoryId String?        @db.Uuid
+  project         Project?       @relation(fields: [projectId], references: [id])
+  skillCategory   SkillCategory? @relation(fields: [skillCategoryId], references: [id])
 
-  @@unique([profile_id, salary_month, salary_year], map: "uq_profile_salary_month")
-  @@index([salary_year, salary_month], map: "idx_salary_slips_period")
-  @@index([profile_id], map: "idx_salary_slips_profile")
-  @@index([profile_id, salary_year, salary_month], map: "idx_salary_slips_profile_period")
-  @@index([payment_status], map: "idx_salary_slips_status")
+  @@map("project_resource_requirements")
 }
 
-model profile_skills {
-  years_of_experience Int?              @default(0)
-  is_primary          Boolean?          @default(false)
-  verified_at         DateTime?         @db.Timestamp(6)
-  created_at          DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at          DateTime?         @default(now()) @db.Timestamp(6)
-  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id          String?           @db.Uuid
-  skill_category_id   String?           @db.Uuid
-  verified_by_user_id String?           @db.Uuid
-  profiles            profiles?         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_skills_profiles")
-  skill_categories    skill_categories? @relation(fields: [skill_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_skills_skill_categories")
-  users               users?            @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+model ProjectWorkerAssignment {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId           String?   @db.Uuid
+  profileId           String?   @db.Uuid
+  createdAt           DateTime? @db.Timestamptz(6)
+  updatedAt           DateTime? @db.Timestamptz(6)
+  assignedByProfileId String?   @db.Uuid
+  removedAt           DateTime? @db.Timestamptz(6)
+  removedByProfileId  String?   @db.Uuid
+  removalReason       String?
+  sharedAt            DateTime? @db.Timestamptz(6)
+  sharedByProfileId   String?   @db.Uuid
+  matchedAt           DateTime? @db.Timestamptz(6)
+  assignedAt          DateTime? @db.Timestamptz(6)
+  deployedAt          DateTime? @db.Timestamptz(6)
+  stage               String?
+  assignedByProfile   Profile?  @relation("project_worker_assignments_assignedByProfileIdToprofiles", fields: [assignedByProfileId], references: [id])
+  profile             Profile?  @relation("project_worker_assignments_profileIdToprofiles", fields: [profileId], references: [id])
+  project             Project?  @relation(fields: [projectId], references: [id])
+  removedByProfile    Profile?  @relation("project_worker_assignments_removedByProfileIdToprofiles", fields: [removedByProfileId], references: [id])
+  sharedByProfile     Profile?  @relation("project_worker_assignments_sharedByProfileIdToprofiles", fields: [sharedByProfileId], references: [id])
 
-  @@index([skill_category_id, is_primary], map: "idx_profile_skills_skill_primary")
+  @@map("project_worker_assignments")
 }
 
-model profiles {
-  candidate_code                 String                       @unique(map: "profiles_profile_code_key") @db.VarChar(50)
-  phone                          String                       @unique(map: "profiles_mobile_number_key") @db.VarChar(20)
-  alt_phone                      String?                      @db.VarChar(20)
-  email                          String?                      @db.VarChar(255)
-  first_name                     String                       @db.VarChar(255)
-  middle_name                    String?                      @db.VarChar(255)
-  last_name                      String?                      @db.VarChar(255)
-  fathers_name                   String?                      @db.VarChar(255)
-  gender                         String?                      @db.VarChar(20)
-  date_of_birth                  DateTime?                    @db.Date
-  is_active                      Boolean?                     @default(true)
-  created_at                     DateTime?                    @default(now()) @db.Timestamp(6)
-  updated_at                     DateTime?                    @default(now()) @db.Timestamp(6)
-  profile_photo_url              String?                      @db.VarChar(500)
-  id                             String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  deleted_at                     DateTime?                    @db.Timestamp(6)
-  deleted_by_user_id             String?                      @db.Uuid
-  previous_stage                 String?                      @db.VarChar(50)
-  esic_number                    String?                      @db.VarChar(17)
-  uan_number                     String?                      @db.VarChar(12)
-  pf_account_number              String?                      @db.VarChar(100)
-  pan_number                     String?                      @db.VarChar(10)
-  health_insurance_policy_number String?                      @db.VarChar(100)
-  aadhaar_number                 String?                      @db.VarChar(12)
-  emergency_contact_name         String?                      @db.VarChar(255)
-  emergency_contact_number       String?                      @db.VarChar(20)
-  languages_known                String?                      @db.VarChar(500)
-  nominee_name                   String?                      @db.VarChar(255)
-  blood_group                    String?                      @db.VarChar(10)
-  current_stage                  String?                      @default("new") @db.VarChar(50)
-  password_hash                  String?                      @db.VarChar(255)
-  primary_skill_id               String?                      @db.Uuid
-  addresses                      addresses[]
-  bank_accounts                  bank_accounts[]
-  batch_enrollments              batch_enrollments[]
-  certificates                   certificates[]
-  documents                      documents[]
-  interactions                   interactions[]
-  profile_blacklist              profile_blacklist[]
-  profile_salary_slips           profile_salary_slips[]
-  profile_skills                 profile_skills[]
-  trainer                        trainers?
-  users                          users?                       @relation(fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  primary_skill                  skill_categories?            @relation("ProfilePrimarySkill", fields: [primary_skill_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  project_worker_assignments     project_worker_assignments[]
-  qualifications                 qualifications[]
-  stage_transitions              stage_transitions[]
+// -----------------------------------------------------------------------------
+// Project Requests
+// -----------------------------------------------------------------------------
 
-  @@index([esic_number], map: "idx_profiles_esic")
-  @@index([pan_number], map: "idx_profiles_pan")
-  @@index([uan_number], map: "idx_profiles_uan")
-  @@index([primary_skill_id], map: "idx_profiles_primary_skill")
+model ProjectRequest {
+  id                    String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectTitle          String?
+  projectDescription    String?
+  location              String?
+  estimatedStartDate    DateTime?                   @db.Date
+  estimatedDurationDays Int?
+  estimatedBudget       Decimal?                    @db.Decimal
+  additionalNotes       String?
+  status                String?
+  reviewedAt            DateTime?                   @db.Timestamptz(6)
+  createdAt             DateTime?                   @db.Timestamptz(6)
+  updatedAt             DateTime?                   @db.Timestamptz(6)
+  employerId            String?                     @db.Uuid
+  projectId             String?                     @db.Uuid
+  reviewedByProfileId   String?                     @db.Uuid
+  requirements          ProjectRequestRequirement[]
+  employer              Employer?                   @relation(fields: [employerId], references: [id])
+  reviewedByProfile     Profile?                    @relation(fields: [reviewedByProfileId], references: [id])
+
+  @@map("project_requests")
 }
 
-model project_financials {
-  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_id             String    @unique @db.Uuid
-  contract_value         Decimal?  @db.Decimal
-  revised_contract_value Decimal?  @db.Decimal
-  variation_order_value  Decimal?  @default(0) @db.Decimal
-  actual_cost_incurred   Decimal?  @default(0) @db.Decimal
-  misc_cost              Decimal?  @default(0) @db.Decimal
-  budget                 Decimal?  @db.Decimal
-  created_at             DateTime? @default(now()) @db.Timestamp(6)
-  updated_at             DateTime? @default(now()) @db.Timestamp(6)
-  projects               projects  @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model ProjectRequestRequirement {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectRequestId String?         @db.Uuid
+  skillCategoryId  String?         @db.Uuid
+  requiredCount    Int?
+  createdAt        DateTime?       @db.Timestamptz(6)
+  updatedAt        DateTime?       @db.Timestamptz(6)
+  projectRequest   ProjectRequest? @relation(fields: [projectRequestId], references: [id])
+  skillCategory    SkillCategory?  @relation(fields: [skillCategoryId], references: [id])
 
-  @@index([project_id], map: "idx_project_financials_project_id")
+  @@map("project_request_requirements")
 }
 
-model project_request_requirements {
-  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_request_id String           @db.Uuid
-  skill_category_id  String           @db.Uuid
-  required_count     Int              @default(0)
+// =============================================================================
+// TRAINING DOMAIN
+// =============================================================================
+
+model TrainingBatch {
+  id                 String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String?
+  name               String?
+  programName        String?
+  provider           String?
+  startDate          DateTime?                    @db.Date
+  endDate            DateTime?                    @db.Date
+  durationDays       Int?
+  maxCapacity        Int?
+  status             String?
+  location           String?
+  description        String?
+  createdAt          DateTime?                    @db.Timestamptz(6)
+  updatedAt          DateTime?                    @db.Timestamptz(6)
+  createdByProfileId String?                      @db.Uuid
+  shift              String?
+  certificates       ProfileTrainingCertificate[]
+  enrollments        TrainingBatchEnrollment[]
+  trainers           TrainingBatchTrainer[]
+  createdByProfile   Profile?                     @relation(fields: [createdByProfileId], references: [id])
+  trainingHistory    TrainingHistory[]
+
+  @@map("training_batches")
+}
+
+model TrainingBatchEnrollment {
+  id                        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId                 String?        @db.Uuid
+  batchId                   String?        @db.Uuid
+  status                    String?
+  notes                     String?
+  isCustomSchedule          Boolean?
+  droppedBeforeStart        Boolean?
+  dropReason                String?
+  enrollmentDate            DateTime?      @db.Timestamptz(6)
+  completionDate            DateTime?      @db.Date
+  actualStartDate           DateTime?      @db.Timestamptz(6)
+  actualEndDate             DateTime?      @db.Timestamptz(6)
+  enrolledByProfileId       String?        @db.Uuid
+  forceCompletedByProfileId String?        @db.Uuid
+  forceCompletedAt          DateTime?      @db.Timestamptz(6)
+  forceCompletionReason     String?
+  createdAt                 DateTime?      @db.Timestamptz(6)
+  updatedAt                 DateTime?      @db.Timestamptz(6)
+  batch                     TrainingBatch? @relation(fields: [batchId], references: [id])
+  enrolledByProfile         Profile?       @relation("training_batch_enrollments_enrolledByProfileIdToprofiles", fields: [enrolledByProfileId], references: [id])
+  forceCompletedByProfile   Profile?       @relation("training_batch_enrollments_forceCompletedByProfileIdToprofiles", fields: [forceCompletedByProfileId], references: [id])
+  profile                   Profile?       @relation("training_batch_enrollments_profileIdToprofiles", fields: [profileId], references: [id])
+
+  @@map("training_batch_enrollments")
+}
+
+model TrainingBatchTrainer {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trainingBatchId     String?        @db.Uuid
+  trainerProfileId    String?        @db.Uuid
+  shift               String?        @db.VarChar(20) // "shift_1" or "shift_2"
+  assignedAt          DateTime?      @db.Timestamptz(6)
+  assignedByProfileId String?        @db.Uuid
+  assignedByProfile   Profile?       @relation("training_batch_trainers_assignedByProfileIdToprofiles", fields: [assignedByProfileId], references: [id])
+  trainerProfile      Profile?       @relation("training_batch_trainers_trainerProfileIdToprofiles", fields: [trainerProfileId], references: [id])
+  trainingBatch       TrainingBatch? @relation(fields: [trainingBatchId], references: [id])
+
+  @@unique([trainingBatchId, shift], name: "unique_batch_shift") // One trainer per shift per batch
+  @@index([trainerProfileId], name: "idx_trainer_profile")
+  @@map("training_batch_trainers")
+}
+
+model TrainingHistory {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId          String?        @db.Uuid
+  trainingBatchId    String?        @db.Uuid
+  eventType          String?
+  startDate          DateTime?      @db.Timestamptz(6)
+  endDate            DateTime?      @db.Timestamptz(6)
+  forciblyCompleted  Boolean?       @default(false)
+  eventAt            DateTime?      @db.Timestamptz(6)
+  createdByProfileId String?        @db.Uuid
   notes              String?
-  created_at         DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
-  project_requests   project_requests @relation(fields: [project_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  skill_categories   skill_categories @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  score              Decimal?       @db.Decimal
+  metadata           Json?
+  createdByProfile   Profile?       @relation("training_history_createdByProfileIdToprofiles", fields: [createdByProfileId], references: [id])
+  profile            Profile?       @relation("training_history_profileIdToprofiles", fields: [profileId], references: [id])
+  trainingBatch      TrainingBatch? @relation(fields: [trainingBatchId], references: [id])
+
+  @@map("training_history")
 }
 
-model project_requests {
-  project_title                String                         @db.VarChar(255)
-  project_description          String?
-  location                     String?                        @db.VarChar(255)
-  estimated_start_date         DateTime?                      @db.Date
-  estimated_duration_days      Int?
-  estimated_budget             Decimal?                       @db.Decimal(15, 2)
-  additional_notes             String?
-  status                       String                         @default("pending") @db.VarChar(50)
-  reviewed_at                  DateTime?                      @db.Timestamp(6)
-  created_at                   DateTime                       @default(now()) @db.Timestamp(6)
-  updated_at                   DateTime                       @default(now()) @db.Timestamp(6)
-  id                           String                         @id(map: "employer_project_requirements_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  employer_id                  String?                        @db.Uuid
-  project_id                   String?                        @db.Uuid
-  reviewed_by_user_id          String?                        @db.Uuid
-  project_request_requirements project_request_requirements[]
-  employers                    employers?                     @relation(fields: [employer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_employer_id_fkey")
-  projects                     projects?                      @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_project_id_fkey")
-  users                        users?                         @relation(fields: [reviewed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employer_project_requirements_reviewed_by_user_id_fkey")
+model ProfileTrainingCertificate {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId            String?        @db.Uuid
+  certificateNumber    String?
+  trainingBatchId      String?        @db.Uuid
+  issuedDate           DateTime?      @db.Timestamptz(6)
+  issuedByProfileId    String?        @db.Uuid
+  createdAt            DateTime?      @db.Timestamptz(6)
+  updatedAt            DateTime?      @db.Timestamptz(6)
+  certificateFileS3Key String?
+  certificateFileUrl   String?
+  issuedByProfile      Profile?       @relation("profile_training_certificates_issuedByProfileIdToprofiles", fields: [issuedByProfileId], references: [id])
+  profile              Profile?       @relation("profile_training_certificates_profileIdToprofiles", fields: [profileId], references: [id])
+  trainingBatch        TrainingBatch? @relation(fields: [trainingBatchId], references: [id])
 
-  @@index([status], map: "idx_employer_project_requirements_status")
+  @@map("profile_training_certificates")
 }
 
-model project_resource_requirements {
-  required_count    Int               @default(0)
-  notes             String?
-  created_at        DateTime          @default(now()) @db.Timestamp(6)
-  updated_at        DateTime          @default(now()) @db.Timestamp(6)
-  id                String            @id(map: "project_skill_requirements_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_id        String?           @db.Uuid
-  skill_category_id String?           @db.Uuid
-  projects          projects?         @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_project_resource_requirements_projects")
-  skill_categories  skill_categories? @relation(fields: [skill_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_project_resource_requirements_skill_categories")
+// =============================================================================
+// NOTIFICATION DOMAIN
+// =============================================================================
+
+model Notification {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type               String?
+  title              String?
+  message            String?
+  recipientProfileId String?   @db.Uuid
+  recipientEmail     String?
+  senderProfileId    String?   @db.Uuid
+  metadata           Json?
+  status             String?
+  sentAt             DateTime? @db.Timestamptz(6)
+  readAt             DateTime? @db.Timestamptz(6)
+  errorMessage       String?
+  retryCount         Int?
+  createdAt          DateTime? @db.Timestamptz(6)
+  updatedAt          DateTime? @db.Timestamptz(6)
+  recipientProfile   Profile?  @relation("notifications_recipientProfileIdToprofiles", fields: [recipientProfileId], references: [id])
+  senderProfile      Profile?  @relation("notifications_senderProfileIdToprofiles", fields: [senderProfileId], references: [id])
+
+  @@map("notifications")
 }
 
-model project_status_documents {
-  id                        String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_status_history_id String                 @db.Uuid
-  project_id                String                 @db.Uuid
-  status                    String                 @db.VarChar(50)
-  document_title            String                 @db.VarChar(500)
-  file_url                  String                 @db.VarChar(1000)
-  uploaded_by_user_id       String?                @db.Uuid
-  created_at                DateTime?              @default(now()) @db.Timestamp(6)
-  projects                  projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  project_status_history    project_status_history @relation(fields: [project_status_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                     users?                 @relation(fields: [uploaded_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model NotificationChannel {
+  id                 String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String?
+  description        String?
+  preferenceChannels NotificationPreferenceChannel[]
+  templateChannels   NotificationTemplateChannel[]
 
-  @@index([project_status_history_id], map: "idx_project_status_documents_history")
-  @@index([project_id], map: "idx_project_status_documents_project")
-  @@index([status], map: "idx_project_status_documents_status")
+  @@map("notification_channels")
 }
 
-model project_status_history {
-  id                       String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_id               String                     @db.Uuid
-  from_status              String?                    @db.VarChar(50)
-  to_status                String                     @db.VarChar(50)
-  change_reason            String?
-  attributable_to          String?                    @db.VarChar(50)
-  status_date              DateTime                   @db.Timestamp(6)
-  changed_by_user_id       String?                    @db.Uuid
-  created_at               DateTime?                  @default(now()) @db.Timestamp(6)
-  project_status_documents project_status_documents[]
-  users                    users?                     @relation(fields: [changed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  projects                 projects                   @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model NotificationTemplate {
+  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type            String?
+  name            String?
+  description     String?
+  subjectTemplate String?
+  bodyTemplate    String?
+  variables       Json?
+  isActive        Boolean?
+  createdAt       DateTime?                     @db.Timestamptz(6)
+  updatedAt       DateTime?                     @db.Timestamptz(6)
+  channels        NotificationTemplateChannel[]
 
-  @@index([project_id, created_at(sort: Desc)], map: "idx_project_status_history_project_date")
-  @@index([to_status], map: "idx_project_status_history_status")
+  @@map("notification_templates")
 }
 
-model project_worker_assignments {
-  id                  String           @id(map: "project_matched_profiles_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  project_id          String           @db.Uuid
-  profile_id          String           @db.Uuid
-  skill_category_id   String           @db.Uuid
-  status              String?          @default("matched") @db.VarChar(50)
-  created_at          DateTime         @default(now()) @db.Timestamp(6)
-  updated_at          DateTime         @default(now()) @db.Timestamp(6)
-  assigned_by_user_id String?          @db.Uuid
-  shared_at           DateTime?        @db.Timestamp(6)
-  shared_by_user_id   String?          @db.Uuid
-  onboarded_date      DateTime?        @db.Timestamp(6)
-  deployed_date       DateTime?        @db.Timestamp(6)
-  removed_at          DateTime?        @db.Timestamp(6)
-  removed_by_user_id  String?          @db.Uuid
-  removal_reason      String?
-  profiles            profiles         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "project_matched_profiles_profile_id_fkey")
-  projects            projects         @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "project_matched_profiles_project_id_fkey")
-  skill_categories    skill_categories @relation(fields: [skill_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "project_matched_profiles_skill_category_id_fkey")
-  users_assigned_by   users?           @relation("assignment_assigned_by", fields: [assigned_by_user_id], references: [id], onUpdate: NoAction)
-  users_removed_by    users?           @relation("assignment_removed_by", fields: [removed_by_user_id], references: [id], onUpdate: NoAction)
+model NotificationTemplateChannel {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificationTemplateId String?               @db.Uuid
+  channelId              String?               @db.Uuid
+  channel                NotificationChannel?  @relation(fields: [channelId], references: [id])
+  notificationTemplate   NotificationTemplate? @relation(fields: [notificationTemplateId], references: [id])
 
-  @@unique([project_id, profile_id, skill_category_id], map: "project_matched_profiles_project_id_profile_id_skill_catego_key")
-  @@index([profile_id], map: "idx_project_matched_profiles_profile")
-  @@index([project_id], map: "idx_project_matched_profiles_project")
-  @@index([skill_category_id], map: "idx_project_matched_profiles_skill")
-  @@index([assigned_by_user_id], map: "idx_project_worker_assignments_assigned_by")
-  @@index([removed_by_user_id], map: "idx_project_worker_assignments_removed_by")
+  @@map("notification_template_channels")
 }
 
-model projects {
-  code                                     String                          @unique(map: "projects_project_code_key") @db.VarChar(50)
-  name                                     String                          @db.VarChar(255)
-  location                                 String?                         @db.VarChar(255)
-  contact_phone                            String?                         @db.VarChar(20)
-  deployment_date                          DateTime?                       @db.Date
-  award_date                               DateTime?                       @db.Date
-  start_date                               DateTime?                       @db.Date
-  end_date                                 DateTime?                       @db.Date
-  revised_completion_date                  DateTime?                       @db.Date
-  status                                   String?                         @default("planning") @db.VarChar(50)
-  project_manager                          String?                         @db.VarChar(255)
-  description                              String?
-  po_co_number                             String?                         @db.VarChar(100)
-  is_active                                Boolean?                        @default(true)
-  is_accommodation_provided                Boolean?                        @default(false)
-  created_at                               DateTime?                       @default(now()) @db.Timestamp(6)
-  updated_at                               DateTime?                       @default(now()) @db.Timestamp(6)
-  id                                       String                          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  employer_id                              String?                         @db.Uuid
-  created_by_user_id                       String?                         @db.Uuid
-  deleted_at                               DateTime?                       @db.Timestamp(6)
-  deleted_by_user_id                       String?                         @db.Uuid
-  status_changed_at                        DateTime?                       @db.Timestamp(6)
-  status_change_reason                     String?
-  actual_start_date                        DateTime?                       @db.Date
-  actual_end_date                          DateTime?                       @db.Date
-  current_attributable_to                  String?                         @db.VarChar(50)
-  on_hold_reason                           String?                         @db.VarChar(50)
-  termination_date                         DateTime?                       @db.Date
-  termination_reason                       String?
-  certificates                             certificates[]
-  project_financials                       project_financials?
-  project_requests                         project_requests[]
-  project_resource_requirements            project_resource_requirements[]
-  project_status_documents                 project_status_documents[]
-  project_status_history                   project_status_history[]
-  project_worker_assignments               project_worker_assignments[]
-  employers                                employers?                      @relation(fields: [employer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projects_employers")
-  users_projects_created_by_user_idTousers users?                          @relation("projects_created_by_user_idTousers", fields: [created_by_user_id], references: [id], onUpdate: NoAction)
-  users_projects_deleted_by_user_idTousers users?                          @relation("projects_deleted_by_user_idTousers", fields: [deleted_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model NotificationPreference {
+  id               String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId        String?                         @db.Uuid
+  notificationType String?
+  isEnabled        Boolean?
+  createdAt        DateTime?                       @db.Timestamptz(6)
+  updatedAt        DateTime?                       @db.Timestamptz(6)
+  channels         NotificationPreferenceChannel[]
+  profile          Profile?                        @relation(fields: [profileId], references: [id])
+
+  @@map("notification_preferences")
 }
 
-model qualification_types {
-  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name           String           @unique @db.VarChar
-  description    String?
-  is_active      Boolean?         @default(true)
-  qualifications qualifications[]
+model NotificationPreferenceChannel {
+  id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificationPreferenceId String?                 @db.Uuid
+  channelId                String?                 @db.Uuid
+  channel                  NotificationChannel?    @relation(fields: [channelId], references: [id])
+  notificationPreference   NotificationPreference? @relation(fields: [notificationPreferenceId], references: [id])
+
+  @@map("notification_preference_channels")
 }
 
-model qualifications {
-  institution_name      String?              @db.VarChar(255)
-  field_of_study        String?              @db.VarChar(255)
-  year_of_completion    Int?
-  percentage_or_grade   String?              @db.VarChar(50)
-  verified_at           DateTime?            @db.Timestamp(6)
-  created_at            DateTime?            @default(now()) @db.Timestamp(6)
-  id                    String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id            String?              @db.Uuid
-  verified_by_user_id   String?              @db.Uuid
-  qualification_type_id String?              @db.Uuid
-  documents             documents[]
-  profiles              profiles?            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_qualifications_profiles")
-  qualification_types   qualification_types? @relation(fields: [qualification_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                 users?               @relation(fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
-}
+// =============================================================================
+// SOCIAL MEDIA DOMAIN
+// =============================================================================
 
-model role_permissions {
-  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  role_id        String   @db.Uuid
-  module_name    String   @db.VarChar(100)
-  can_view       Boolean  @default(false)
-  can_manage     Boolean  @default(false)
-  can_export     Boolean  @default(false)
-  is_super_admin Boolean  @default(false)
-  created_at     DateTime @default(now()) @db.Timestamp(6)
-  updated_at     DateTime @default(now()) @db.Timestamp(6)
-  roles          roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([role_id, module_name], map: "uq_role_module")
-  @@index([module_name], map: "idx_role_permissions_module_name")
-  @@index([role_id], map: "idx_role_permissions_role_id")
-}
-
-model roles {
-  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name             String             @unique @db.VarChar(100)
+model SocialMediaPost {
+  id               String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String?
+  caption          String?
   description      String?
-  is_active        Boolean            @default(true)
-  created_at       DateTime           @default(now()) @db.Timestamp(6)
-  updated_at       DateTime           @default(now()) @db.Timestamp(6)
-  role_permissions role_permissions[]
-  users            users[]
+  content          String?
+  imageUrl         String?
+  videoUrl         String?
+  projectName      String?
+  sourceUrl        String?
+  status           String?
+  scheduledAt      DateTime?                 @db.Timestamptz(6)
+  publishedAt      DateTime?                 @db.Timestamptz(6)
+  makeResponse     Json?
+  makeWebhookId    String?
+  platformContent  Json?
+  youtubeCategory  String?
+  youtubePrivacy   String?
+  youtubeThumbnail String?
+  engagement       Json?
+  createdBy        String?
+  createdAt        DateTime?                 @db.Timestamptz(6)
+  updatedAt        DateTime?                 @db.Timestamptz(6)
+  platformPosts    SocialMediaPlatformPost[]
+  media            SocialMediaPostMedia[]
+  platforms        SocialMediaPostPlatform[]
+  tags             SocialMediaPostTag[]
 
-  @@index([is_active], map: "idx_roles_is_active")
-  @@index([name], map: "idx_roles_name")
+  @@map("social_media_posts")
 }
 
-model scraper_websites {
-  url        String    @unique @db.VarChar(1000)
-  type       String?   @default("other") @db.VarChar(20)
-  is_active  Boolean?  @default(true)
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @default(now()) @db.Timestamp(6)
-  name       String?   @db.VarChar(300)
-  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+model SocialMediaPlatformPost {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform       String?
+  platformPostId String?
+  status         String?
+  publishedAt    DateTime?        @db.Timestamptz(6)
+  errorMessage   String?
+  engagement     Json?
+  createdAt      DateTime?        @db.Timestamptz(6)
+  updatedAt      DateTime?        @db.Timestamptz(6)
+  postId         String?          @db.Uuid
+  post           SocialMediaPost? @relation(fields: [postId], references: [id])
 
-  @@index([is_active], map: "idx_scraper_websites_is_active")
-  @@index([type], map: "idx_scraper_websites_type")
+  @@map("social_media_platform_posts")
 }
 
-model skill_categories {
-  name                          String                          @unique @db.VarChar(255)
-  description                   String?
-  is_active                     Boolean?                        @default(true)
-  created_at                    DateTime?                       @default(now()) @db.Timestamp(6)
-  updated_at                    DateTime?                       @default(now()) @db.Timestamp(6)
-  id                            String                          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_skills                profile_skills[]
-  profiles_with_primary_skill   profiles[]                      @relation("ProfilePrimarySkill")
-  project_request_requirements  project_request_requirements[]
-  project_resource_requirements project_resource_requirements[]
-  project_worker_assignments    project_worker_assignments[]
+model SocialMediaPostMedia {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  socialMediaPostId String?          @db.Uuid
+  url               String?
+  mediaType         String?
+  orderIndex        Int?
+  post              SocialMediaPost? @relation(fields: [socialMediaPostId], references: [id])
+
+  @@map("social_media_post_media")
 }
 
-model social_media_platform_posts {
-  platform           String              @db.VarChar(50)
-  platform_post_id   String?             @db.VarChar(255)
-  status             String?             @default("pending") @db.VarChar(50)
-  published_at       DateTime?           @db.Timestamptz(6)
-  error_message      String?
-  engagement         Json?               @default("{}")
-  created_at         DateTime?           @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime?           @default(now()) @db.Timestamptz(6)
-  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  post_id            String?             @db.Uuid
-  social_media_posts social_media_posts? @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_social_media_platform_posts")
-
-  @@index([platform], map: "idx_platform_posts_platform")
-  @@index([status], map: "idx_platform_posts_status")
-}
-
-model social_media_posts {
-  title                       String?                       @db.VarChar(500)
-  caption                     String?
-  description                 String?
-  content                     String
-  platforms                   String[]
-  tags                        String[]                      @default([])
-  image_url                   String?
-  video_url                   String?
-  media_urls                  String[]                      @default([])
-  project_name                String?                       @db.VarChar(500)
-  source_url                  String?
-  status                      String?                       @default("draft") @db.VarChar(50)
-  scheduled_at                DateTime?                     @db.Timestamptz(6)
-  published_at                DateTime?                     @db.Timestamptz(6)
-  make_response               Json?
-  make_webhook_id             String?                       @db.VarChar(255)
-  platform_content            Json?
-  youtube_category            String?                       @db.VarChar(100)
-  youtube_privacy             String?                       @default("public") @db.VarChar(20)
-  youtube_thumbnail           String?
-  engagement                  Json?                         @default("{}")
-  created_by                  String?                       @db.VarChar(255)
-  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
-  updated_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
-  id                          String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  social_media_platform_posts social_media_platform_posts[]
-
-  @@index([created_at(sort: Desc)], map: "idx_social_media_posts_created_at")
-  @@index([platforms], map: "idx_social_media_posts_platforms", type: Gin)
-  @@index([published_at(sort: Desc)], map: "idx_social_media_posts_published_at")
-  @@index([scheduled_at], map: "idx_social_media_posts_scheduled_at")
-  @@index([status], map: "idx_social_media_posts_status")
-  @@index([tags], map: "idx_social_media_posts_tags", type: Gin)
-}
-
-model stage_transitions {
-  from_stage              String?   @db.VarChar(50)
-  to_stage                String    @db.VarChar(50)
-  transitioned_at         DateTime? @default(now()) @db.Timestamp(6)
-  notes                   String?
-  id                      String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id              String?   @db.Uuid
-  transitioned_by_user_id String?   @db.Uuid
-  profiles                profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stage_transitions_profiles")
-  users                   users?    @relation(fields: [transitioned_by_user_id], references: [id], onUpdate: NoAction)
-
-  @@index([profile_id, transitioned_at(sort: Desc)], map: "idx_stage_transitions_profile_date")
-}
-
-model trainers {
-  id                      String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id              String                    @unique @db.Uuid
-  specialization          String?                   @db.VarChar(500)
-  certifications          String?
-  years_of_experience     Int?
-  bio                     String?
-  is_active               Boolean?                  @default(true)
-  created_by_user_id      String?                   @db.Uuid
-  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
-  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
-  profiles                profiles                  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                   users?                    @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  trainer_batch_assignments trainer_batch_assignments[]
-
-  @@index([profile_id], map: "idx_trainers_profile_id")
-  @@index([is_active], map: "idx_trainers_is_active")
-}
-
-model trainer_batch_assignments {
-  id               String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  trainer_id       String            @db.Uuid
-  training_batch_id String           @db.Uuid
-  shift            String            @db.VarChar(20)
-  assigned_date    DateTime?         @default(now()) @db.Timestamp(6)
-  assigned_by_user_id String?        @db.Uuid
-  is_active        Boolean?          @default(true)
-  created_at       DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
-  trainers         trainers          @relation(fields: [trainer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  training_batches training_batches  @relation(fields: [training_batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users            users?            @relation(fields: [assigned_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([trainer_id, training_batch_id, shift], map: "uq_trainer_batch_shift")
-  @@index([trainer_id], map: "idx_trainer_batch_assignments_trainer")
-  @@index([training_batch_id], map: "idx_trainer_batch_assignments_batch")
-  @@index([shift], map: "idx_trainer_batch_assignments_shift")
-}
-
-model training_batches {
-  code                      String                      @unique(map: "training_batches_batch_code_key") @db.VarChar(50)
-  name                      String                      @db.VarChar(255)
-  program_name              String                      @db.VarChar(255)
-  provider                  String?                     @db.VarChar(255)
-  start_date                DateTime?                   @db.Date
-  end_date                  DateTime?                   @db.Date
-  duration_days             Int?
-  max_capacity              Int?
-  status                    String?                     @default("upcoming") @db.VarChar(50)
-  location                  String?                     @db.VarChar(255)
-  description               String?
-  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
-  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
-  id                        String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_by_user_id        String?                     @db.Uuid
-  batch_enrollments         batch_enrollments[]
-  certificates              certificates[]
-  users                     users?                      @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
-  trainer_batch_assignments trainer_batch_assignments[]
-
-  @@index([status], map: "idx_training_batches_status")
-  @@index([start_date], map: "idx_training_batches_start_date")
-}
-
-model users {
-  username                                                            String                       @unique @db.VarChar(255)
-  email                                                               String                       @unique @db.VarChar(255)
-  password_hash                                                       String                       @db.VarChar(255)
-  full_name                                                           String?                      @db.VarChar(255)
-  phone                                                               String?                      @db.VarChar(20)
-  is_active                                                           Boolean?                     @default(true)
-  last_login                                                          DateTime?                    @db.Timestamp(6)
-  created_at                                                          DateTime?                    @default(now()) @db.Timestamp(6)
-  updated_at                                                          DateTime?                    @default(now()) @db.Timestamp(6)
-  id                                                                  String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  role_id                                                             String?                      @db.Uuid
-  activity_logs                                                       activity_logs[]
-  bank_accounts                                                       bank_accounts[]
-  batch_enrollments                                                   batch_enrollments[]
-  blogs                                                               blogs[]
-  certificates                                                        certificates[]
-  documents_documents_uploaded_by_user_idTousers                      documents[]                  @relation("documents_uploaded_by_user_idTousers")
-  documents_documents_verified_by_user_idTousers                      documents[]                  @relation("documents_verified_by_user_idTousers")
-  employers_employers_deleted_by_user_idTousers                       employers[]                  @relation("employers_deleted_by_user_idTousers")
-  employers_employers_verified_by_user_idTousers                      employers[]                  @relation("employers_verified_by_user_idTousers")
-  interactions                                                        interactions[]
-  notification_preferences                                            notification_preferences[]
-  notifications_received                                              notifications[]              @relation("notifications_recipient")
-  notifications_sent                                                  notifications[]              @relation("notifications_sent_by")
-  profile_blacklist_profile_blacklist_blacklisted_by_user_idTousers   profile_blacklist[]          @relation("profile_blacklist_blacklisted_by_user_idTousers")
-  profile_blacklist_profile_blacklist_unblacklisted_by_user_idTousers profile_blacklist[]          @relation("profile_blacklist_unblacklisted_by_user_idTousers")
-  profile_skills                                                      profile_skills[]
-  profiles                                                            profiles[]
-  project_requests                                                    project_requests[]
-  project_status_documents                                            project_status_documents[]
-  project_status_history                                              project_status_history[]
-  project_worker_assignments_assigned_by                              project_worker_assignments[] @relation("assignment_assigned_by")
-  project_worker_assignments_removed_by                               project_worker_assignments[] @relation("assignment_removed_by")
-  projects_projects_created_by_user_idTousers                         projects[]                   @relation("projects_created_by_user_idTousers")
-  projects_projects_deleted_by_user_idTousers                         projects[]                   @relation("projects_deleted_by_user_idTousers")
-  qualifications                                                      qualifications[]
-  stage_transitions                                                   stage_transitions[]
-  trainers                                                            trainers[]
-  trainer_batch_assignments                                           trainer_batch_assignments[]
-  training_batches                                                    training_batches[]
-  roles                                                               roles?                       @relation(fields: [role_id], references: [id], onUpdate: NoAction)
-
-  @@index([role_id], map: "idx_users_role_id")
-}
-
-model notifications {
-  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  type              String    @db.VarChar(100)
-  title             String    @db.VarChar(255)
-  message           String
-  recipient_user_id String?   @db.Uuid
-  recipient_email   String?   @db.VarChar(255)
-  sender_user_id    String?   @db.Uuid
+model SocialMediaPostPlatform {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  socialMediaPostId String?          @db.Uuid
+  platform          String?
+  platformPostId    String?
+  status            String?
+  publishedAt       DateTime?        @db.Timestamptz(6)
+  errorMessage      String?
   metadata          Json?
-  channels          String[]  @default([])
-  status            String    @default("pending") @db.VarChar(50)
-  sent_at           DateTime? @db.Timestamp(6)
-  read_at           DateTime? @db.Timestamp(6)
-  error_message     String?
-  retry_count       Int       @default(0)
-  created_at        DateTime  @default(now()) @db.Timestamp(6)
-  updated_at        DateTime  @default(now()) @db.Timestamp(6)
-  recipient         users?    @relation("notifications_recipient", fields: [recipient_user_id], references: [id], onDelete: Cascade)
-  sender            users?    @relation("notifications_sent_by", fields: [sender_user_id], references: [id])
+  post              SocialMediaPost? @relation(fields: [socialMediaPostId], references: [id])
 
-  @@index([recipient_user_id, status])
-  @@index([type])
-  @@index([created_at])
+  @@map("social_media_post_platforms")
 }
 
-model notification_templates {
-  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  type             String   @unique @db.VarChar(100)
-  name             String   @db.VarChar(255)
-  description      String?
-  subject_template String   @db.VarChar(500)
-  body_template    String
-  variables        Json?
-  default_channels String[] @default(["email", "in_app"])
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now()) @db.Timestamp(6)
-  updated_at       DateTime @default(now()) @db.Timestamp(6)
+model SocialMediaPostTag {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  socialMediaPostId String?          @db.Uuid
+  tag               String?
+  post              SocialMediaPost? @relation(fields: [socialMediaPostId], references: [id])
 
-  @@index([type])
+  @@map("social_media_post_tags")
 }
 
-model notification_preferences {
-  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id           String   @db.Uuid
-  notification_type String   @db.VarChar(100)
-  enabled_channels  String[] @default(["email", "in_app"])
-  is_enabled        Boolean  @default(true)
-  created_at        DateTime @default(now()) @db.Timestamp(6)
-  updated_at        DateTime @default(now()) @db.Timestamp(6)
-  user              users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+// =============================================================================
+// SCRAPER & NEWS DOMAIN
+// =============================================================================
 
-  @@unique([user_id, notification_type])
-  @@index([user_id])
+model ScraperWebsite {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url       String?
+  type      String?
+  isActive  Boolean?
+  createdAt DateTime? @db.Timestamptz(6)
+  updatedAt DateTime? @db.Timestamptz(6)
+  name      String?
+
+  @@map("scraper_websites")
 }
 
-model certificates {
-  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  profile_id         String   @db.Uuid
-  certificate_type   String   @db.VarChar(50) // 'training' or 'project'
-  certificate_url    String   @db.VarChar(500)
-  certificate_number String   @unique @db.VarChar(100)
-  training_batch_id  String?  @db.Uuid
-  project_id         String?  @db.Uuid
-  issued_date        DateTime @default(now()) @db.Timestamp(6)
-  issued_by_user_id  String?  @db.Uuid
-  metadata           Json? // Additional data like course name, duration, etc.
-  created_at         DateTime @default(now()) @db.Timestamp(6)
-  updated_at         DateTime @default(now()) @db.Timestamp(6)
+model ScraperRun {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status               String?
+  startedAt            DateTime? @db.Timestamptz(6)
+  completedAt          DateTime? @db.Timestamptz(6)
+  durationMs           Int?
+  totalUrlsFound       Int?
+  totalArticlesScraped Int?
+  totalValidProjects   Int?
+  totalInserted        Int?
+  totalDuplicates      Int?
+  errorsCount          Int?
+  errors               Json?
+  metrics              Json?
+  insertedProjectIds   Json?
+  triggeredBy          String?
+  createdAt            DateTime? @db.Timestamptz(6)
 
-  // Relations
-  profile        profiles          @relation(fields: [profile_id], references: [id], onDelete: Cascade)
-  training_batch training_batches? @relation(fields: [training_batch_id], references: [id], onDelete: SetNull)
-  project        projects?         @relation(fields: [project_id], references: [id], onDelete: SetNull)
-  issued_by      users?            @relation(fields: [issued_by_user_id], references: [id], onDelete: SetNull)
+  @@map("scraper_runs")
+}
 
-  @@index([profile_id])
-  @@index([certificate_type])
-  @@index([training_batch_id])
-  @@index([project_id])
+model NewsUpdate {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectName      String?
+  sector           String?
+  companyAuthority String?
+  location         String?
+  valueCr          Decimal?  @db.Decimal
+  status           String?
+  revisedBudget    Decimal?  @db.Decimal
+  revisedTimeline  String?
+  delayReason      String?
+  sourceUrl        String?
+  sourceType       String?
+  summaryRemarks   String?
+  scrapedDate      DateTime? @db.Timestamptz(6)
+  createdAt        DateTime? @db.Timestamptz(6)
+  updatedAt        DateTime? @db.Timestamptz(6)
+
+  @@map("news_updates")
+}
+
+// =============================================================================
+// UTILITIES & SYSTEM
+// =============================================================================
+
+model ActivityLog {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  action    String?
+  module    String?
+  recordId  String?
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime? @db.Timestamptz(6)
+  profileId String?   @db.Uuid
+  profile   Profile?  @relation(fields: [profileId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model Blog {
+  id                 BigInt    @id @default(autoincrement())
+  createdAt          DateTime? @db.Timestamptz(6)
+  title              String?
+  content            String?
+  imageUrl           String?
+  category           String?
+  createdByProfileId String?   @db.Uuid
+
+  @@map("blogs")
+}
+
+model CalendarEvent {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId      String?   @db.Uuid
+  eventType      String?
+  referenceTable String?
+  referenceId    String?   @db.Uuid
+  startDate      DateTime? @db.Timestamptz(6)
+  endDate        DateTime? @db.Timestamptz(6)
+  status         String?
+  createdAt      DateTime? @db.Timestamptz(6)
+  updatedAt      DateTime? @db.Timestamptz(6)
+  profile        Profile?  @relation(fields: [profileId], references: [id])
+
+  @@map("calendar_events")
+}
+
+model StatusTrail {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityName         String?
+  entityPrimaryId    String?   @db.Uuid
+  statusType         String?
+  previousStatus     String?
+  newStatus          String?
+  changedByProfileId String?   @db.Uuid
+  changedAt          DateTime? @db.Timestamptz(6)
+  remarks            String?
+  metadata           Json?
+
+  @@map("status_trails")
 }

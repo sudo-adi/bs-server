@@ -1,72 +1,63 @@
+import uploadController from '@/controllers/storage/upload.controller';
 import { Router } from 'express';
-
-// Feature module routes
-import adminRoutes from './admin';
-import authRoutes from './auth';
-import blogRoutes from './blog';
-import certificateRoutes from './certificates';
-import employerRoutes from './employers';
-import { notificationRoutes } from './notifications';
-import profileRoutes from './profiles';
-import projectRoutes from './projects';
-import trainingRoutes from './training';
-import utilityRoutes from './utilities';
-import candidateRoutes from './worker';
-import workerDetailsRoutes from './workerDetails';
-
-// Standalone worker routes (not grouped in worker/index.ts)
-import employerDashboardRoutes from './employers/employerDashboard.routes';
-import workerPortalRoutes from './worker/workerPortal.routes';
-import workerRegistrationRoutes from './worker/workerRegistration.routes';
+import authRoutes from './auth.routes';
+import batchEnrollmentRoutes from './batchEnrollment.routes';
+import blueCollarAvailabilityRoutes from './blueCollarAvailability.routes';
+import certificateRoutes from './certificate.routes';
+import employerRoutes from './employer.routes';
+import employerPortalRoutes from './employerPortal.routes';
+import lookupRoutes from './lookup.routes';
+import profileRoutes from './profile.routes';
+import projectRoutes from './project.routes';
+import roleRoutes from './role.routes';
+import notificationRoutes from './notification.routes';
+import scraperRoutes from './scraper.routes';
+import trainerRoutes from './trainer.routes';
+import trainingBatchRoutes from './trainingBatch.routes';
+import workerRoutes from './worker.routes';
 
 const router = Router();
 
-/**
- * Main API Routes
- *
- * All routes are organized by feature module for better maintainability.
- * Each module's index.ts handles its own sub-routing internally.
- */
-
-// Utility routes (includes health checks)
-router.use('/', utilityRoutes);
-
-// Authentication routes
+// Auth & Users
 router.use('/auth', authRoutes);
+router.use('/roles', roleRoutes);
 
-// Candidate routes
-router.use('/candidate', candidateRoutes);
-
-// Profile routes
+// Core Resources
 router.use('/profiles', profileRoutes);
-
-// Admin routes (users, roles, permissions, skill categories)
-router.use('/', adminRoutes);
-
-// Employer routes
 router.use('/employers', employerRoutes);
-router.use('/employer-dashboard', employerDashboardRoutes);
+router.use('/employer-portal', employerPortalRoutes);
+router.use('/projects', projectRoutes);
 
-// Worker routes
-router.use('/worker', workerRegistrationRoutes);
-router.use('/worker', workerPortalRoutes);
+// Training
+router.use('/training-batches', trainingBatchRoutes);
+router.use('/batch-enrollments', batchEnrollmentRoutes);
+router.use('/trainers', trainerRoutes);
+router.use('/certificates', certificateRoutes);
 
-// Project routes (projects, requests, resource requirements)
-router.use('/', projectRoutes);
+// Blue Collar Availability
+router.use('/blue-collar/availability', blueCollarAvailabilityRoutes);
 
-// Training routes (batches, enrollments)
-router.use('/', trainingRoutes);
+// Worker Self-Service (Blue Collar)
+router.use('/worker', workerRoutes);
 
-// Worker details routes
-router.use('/workerdetails', workerDetailsRoutes);
+// Lookup / Master Data
+router.use('/', lookupRoutes); // categories, languages, qualification-types
+router.use('/scraper', scraperRoutes);
 
-// Blog routes
-router.use('/blogs', blogRoutes);
-
-// Notification routes
+// Notifications
 router.use('/notifications', notificationRoutes);
 
-// Certificate routes
-router.use('/certificates', certificateRoutes);
+// Storage & Documents
+router.post('/documents/signed-url', (req, res) => uploadController.getDocumentSignedUrl(req, res));
+router.get('/storage/status', (req, res) => uploadController.getStorageStatus(req, res));
+
+// Health Check
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API routes are working',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 export default router;

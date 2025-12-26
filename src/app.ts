@@ -46,11 +46,26 @@ app.use(requestLogger);
 // Rate limiting
 // app.use(apiLimiter);
 
-// API routes
-app.use(env.API_PREFIX, routes);
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
 
-// Health check route (without API prefix)
-app.use('/', routes);
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'BS System Server API',
+    version: '1.0.0',
+    status: 'running',
+  });
+});
+
+// API Routes
+app.use(`${env.API_PREFIX || '/api'}`, routes);
 
 // 404 handler
 app.use(notFoundHandler);

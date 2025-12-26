@@ -1,14 +1,55 @@
-// Re-export Prisma types
-export * from './prisma.types';
+// Shared type definitions
+export interface BaseResponse {
+  success: boolean;
+  message: string;
+}
 
-// Re-export shared utilities
-export * from './shared';
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  total: number;
+  page?: number;
+  limit?: number;
+}
 
-// Re-export domain types
-export * from './domain';
+// News Scraper types
+export interface ScrapedArticle {
+  url: string;
+  content: string;
+  scraped_at: Date;
+}
 
-// Re-export enums
-export * from './enums';
+export interface ExtractedProjectData {
+  project_name: string;
+  sector: string;
+  company_authority: string;
+  location: string;
+  value_cr: number;
+  status: string;
+  revised_budget?: number;
+  revised_timeline?: string;
+  delay_reason?: string;
+  source_type: string;
+  summary_remarks: string;
+}
 
-// Re-export notification types
-export * from './notification.types';
+export interface ScraperResult {
+  success: boolean;
+  total_urls_found: number;
+  total_articles_scraped: number;
+  total_valid_projects: number;
+  total_inserted: number;
+  total_duplicates: number;
+  errors: string[];
+  inserted_projects: any[];
+}
+
+export interface CreateNewsUpdateDto extends ExtractedProjectData {
+  source_url: string;
+}
+
+// Project Import types
+export interface ProjectImportOptions {
+  skipDuplicates?: boolean;
+  updateExisting?: boolean;
+}

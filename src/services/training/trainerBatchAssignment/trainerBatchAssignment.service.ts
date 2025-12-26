@@ -1,54 +1,70 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import {
-  AssignTrainerByProfileDto,
-  BulkAssignTrainersDto,
-  TrainerBatchAssignmentWithDetails,
-} from '@/types';
+
+export interface AssignTrainerDto {
+  trainerProfileId: string;
+  trainingBatchId: string;
+  shift: 'shift_1' | 'shift_2';
+  assignedByProfileId?: string;
+}
+
+export interface BulkAssignTrainersDto {
+  trainingBatchId: string;
+  assignments: Array<{
+    trainerProfileId: string;
+    shift: 'shift_1' | 'shift_2';
+  }>;
+  assignedByProfileId?: string;
+}
 
 export class TrainerBatchAssignmentService {
   /**
-   * Assign a trainer to a training batch by profile_id
-   * This is the primary method for assigning trainers using their profile
+   * Check if two date ranges overlap
    */
-  async assignTrainerByProfile(
-    data: AssignTrainerByProfileDto
-  ): Promise<TrainerBatchAssignmentWithDetails> {
+  private datesOverlap(
+    start1: Date | null,
+    end1: Date | null,
+    start2: Date | null,
+    end2: Date | null
+  ): boolean {
+    if (!start1 || !end1 || !start2 || !end2) return false;
+    return start1 <= end2 && start2 <= end1;
+  }
+
+  /**
+   * Assign a trainer (profile) to a training batch for a specific shift
+   */
+  async assignTrainer(data: AssignTrainerDto): Promise<any> {
     // 1. Verify profile exists and is a trainer
-    const trainer = await prisma.trainers.findUnique({
-      where: { profile_id: data.profile_id },
-      include: {
-        profiles: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            phone: true,
-            email: true,
-          },
-        },
+    const profile = await prisma.profile.findUnique({
+      where: { id: data.trainerProfileId, deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        workerType: true,
       },
     });
 
-    if (!trainer) {
-      throw new AppError(
-        'Profile is not registered as a trainer. Please add them to the trainers table first.',
-        404
-      );
+    if (!profile) {
+      throw new AppError('Profile not found', 404);
     }
 
-    if (!trainer.is_active) {
-      throw new AppError('Trainer is inactive and cannot be assigned to batches', 400);
+    if (profile.workerType !== 'trainer') {
+      throw new AppError('Profile is not a trainer', 400);
     }
 
     // 2. Verify training batch exists
-    const batch = await prisma.training_batches.findUnique({
-      where: { id: data.training_batch_id },
+    const batch = await prisma.trainingBatch.findUnique({
+      where: { id: data.trainingBatchId },
       select: {
         id: true,
+        code: true,
         name: true,
-        start_date: true,
-        end_date: true,
+        startDate: true,
+        endDate: true,
         status: true,
       },
     });
@@ -57,62 +73,125 @@ export class TrainerBatchAssignmentService {
       throw new AppError('Training batch not found', 404);
     }
 
-    // 3. Validate trainer schedule (no conflicts)
-    if (batch.start_date && batch.end_date) {
-      await this.validateTrainerSchedule(trainer.id, batch.start_date, batch.end_date, data.shift);
-    }
-
-    // 4. Create the assignment
-    const assignment = await prisma.trainer_batch_assignments.create({
-      data: {
-        trainer_id: trainer.id,
-        training_batch_id: data.training_batch_id,
+    // 3. Check if this shift is already assigned for this batch
+    const existingShiftAssignment = await prisma.trainingBatchTrainer.findFirst({
+      where: {
+        trainingBatchId: data.trainingBatchId,
         shift: data.shift,
-        assigned_by_user_id: data.assigned_by_user_id,
-        is_active: true,
       },
       include: {
-        trainers: {
-          include: {
-            profiles: {
-              select: {
-                id: true,
-                candidate_code: true,
-                first_name: true,
-                middle_name: true,
-                last_name: true,
-                phone: true,
-                email: true,
-              },
-            },
-          },
+        trainerProfile: {
+          select: { firstName: true, lastName: true },
         },
-        training_batches: true,
       },
     });
 
-    return assignment as TrainerBatchAssignmentWithDetails;
+    if (existingShiftAssignment) {
+      const trainerName = `${existingShiftAssignment.trainerProfile?.firstName || ''} ${existingShiftAssignment.trainerProfile?.lastName || ''}`.trim();
+      throw new AppError(
+        `${data.shift === 'shift_1' ? 'Shift 1' : 'Shift 2'} is already assigned to ${trainerName}`,
+        400
+      );
+    }
+
+    // 4. Check if trainer has conflicting assignments in the same date range
+    const conflictingAssignments = await prisma.trainingBatchTrainer.findMany({
+      where: {
+        trainerProfileId: data.trainerProfileId,
+        shift: data.shift,
+        trainingBatch: {
+          status: { in: ['ongoing', 'upcoming', 'scheduled'] },
+        },
+      },
+      include: {
+        trainingBatch: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+    });
+
+    // Check for date overlap
+    for (const assignment of conflictingAssignments) {
+      if (
+        this.datesOverlap(
+          batch.startDate,
+          batch.endDate,
+          assignment.trainingBatch?.startDate || null,
+          assignment.trainingBatch?.endDate || null
+        )
+      ) {
+        throw new AppError(
+          `Trainer has a conflicting ${data.shift === 'shift_1' ? 'Shift 1' : 'Shift 2'} assignment with batch "${assignment.trainingBatch?.name}" (${assignment.trainingBatch?.code})`,
+          400
+        );
+      }
+    }
+
+    // 5. Create the assignment
+    const assignment = await prisma.trainingBatchTrainer.create({
+      data: {
+        trainingBatchId: data.trainingBatchId,
+        trainerProfileId: data.trainerProfileId,
+        shift: data.shift,
+        assignedByProfileId: data.assignedByProfileId,
+        assignedAt: new Date(),
+      },
+      include: {
+        trainerProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+            workerCode: true,
+            candidateCode: true,
+            profilePhotoURL: true,
+          },
+        },
+        trainingBatch: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            programName: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    return assignment;
   }
 
   /**
-   * Assign multiple trainers to a training batch
+   * Assign multiple trainers to a training batch (for both shifts)
    */
-  async bulkAssignTrainers(data: BulkAssignTrainersDto): Promise<TrainerBatchAssignmentWithDetails[]> {
-    const results: TrainerBatchAssignmentWithDetails[] = [];
-    const errors: Array<{ profile_id: string; error: string }> = [];
+  async bulkAssignTrainers(data: BulkAssignTrainersDto): Promise<any[]> {
+    const results: any[] = [];
+    const errors: Array<{ profileId: string; shift: string; error: string }> = [];
 
     for (const assignment of data.assignments) {
       try {
-        const result = await this.assignTrainerByProfile({
-          profile_id: assignment.profile_id,
-          training_batch_id: data.training_batch_id,
+        const result = await this.assignTrainer({
+          trainerProfileId: assignment.trainerProfileId,
+          trainingBatchId: data.trainingBatchId,
           shift: assignment.shift,
-          assigned_by_user_id: data.assigned_by_user_id,
+          assignedByProfileId: data.assignedByProfileId,
         });
         results.push(result);
       } catch (error) {
         errors.push({
-          profile_id: assignment.profile_id,
+          profileId: assignment.trainerProfileId,
+          shift: assignment.shift,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -120,7 +199,7 @@ export class TrainerBatchAssignmentService {
 
     if (errors.length > 0 && results.length === 0) {
       throw new AppError(
-        `Failed to assign all trainers: ${errors.map((e) => `${e.profile_id}: ${e.error}`).join(', ')}`,
+        `Failed to assign trainers: ${errors.map((e) => `${e.profileId} (${e.shift}): ${e.error}`).join(', ')}`,
         400
       );
     }
@@ -131,97 +210,119 @@ export class TrainerBatchAssignmentService {
   /**
    * Get all trainer assignments for a training batch
    */
-  async getTrainersByBatch(batchId: string): Promise<TrainerBatchAssignmentWithDetails[]> {
-    const assignments = await prisma.trainer_batch_assignments.findMany({
+  async getTrainersByBatch(batchId: string): Promise<any[]> {
+    const assignments = await prisma.trainingBatchTrainer.findMany({
       where: {
-        training_batch_id: batchId,
-        is_active: true,
+        trainingBatchId: batchId,
       },
       include: {
-        trainers: {
-          include: {
-            profiles: {
-              select: {
-                id: true,
-                candidate_code: true,
-                first_name: true,
-                middle_name: true,
-                last_name: true,
-                phone: true,
-                email: true,
-              },
-            },
+        trainerProfile: {
+          select: {
+            id: true,
+            candidateCode: true,
+            workerCode: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+            profilePhotoURL: true,
+            dateOfBirth: true,
+            gender: true,
           },
         },
-        training_batches: {
+        trainingBatch: {
           select: {
             id: true,
             code: true,
             name: true,
-            program_name: true,
-            start_date: true,
-            end_date: true,
+            programName: true,
+            startDate: true,
+            endDate: true,
             status: true,
           },
         },
-      },
-      orderBy: {
-        shift: 'asc',
-      },
-    });
-
-    return assignments as TrainerBatchAssignmentWithDetails[];
-  }
-
-  /**
-   * Get all batch assignments for a specific trainer (by profile_id)
-   */
-  async getBatchesByTrainer(profileId: string): Promise<TrainerBatchAssignmentWithDetails[]> {
-    const trainer = await prisma.trainers.findUnique({
-      where: { profile_id: profileId },
-      select: { id: true },
-    });
-
-    if (!trainer) {
-      throw new AppError('Profile is not registered as a trainer', 404);
-    }
-
-    const assignments = await prisma.trainer_batch_assignments.findMany({
-      where: {
-        trainer_id: trainer.id,
-        is_active: true,
-      },
-      include: {
-        trainers: {
-          include: {
-            profiles: {
-              select: {
-                id: true,
-                candidate_code: true,
-                first_name: true,
-                middle_name: true,
-                last_name: true,
-                phone: true,
-                email: true,
-              },
-            },
+        assignedByProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
           },
         },
-        training_batches: true,
       },
-      orderBy: {
-        created_at: 'desc',
-      },
+      orderBy: [{ shift: 'asc' }, { assignedAt: 'desc' }],
     });
 
-    return assignments as TrainerBatchAssignmentWithDetails[];
+    return assignments.map((a) => ({
+      id: a.id,
+      shift: a.shift,
+      assignedAt: a.assignedAt,
+      trainer: {
+        id: a.trainerProfile?.id,
+        name: `${a.trainerProfile?.firstName || ''} ${a.trainerProfile?.lastName || ''}`.trim(),
+        firstName: a.trainerProfile?.firstName,
+        lastName: a.trainerProfile?.lastName,
+        workerCode: a.trainerProfile?.workerCode || a.trainerProfile?.candidateCode,
+        phone: a.trainerProfile?.phone,
+        email: a.trainerProfile?.email,
+        profilePhotoUrl: a.trainerProfile?.profilePhotoURL,
+        dateOfBirth: a.trainerProfile?.dateOfBirth,
+        gender: a.trainerProfile?.gender,
+      },
+      batch: a.trainingBatch,
+      assignedBy: a.assignedByProfile
+        ? {
+            id: a.assignedByProfile.id,
+            name: `${a.assignedByProfile.firstName || ''} ${a.assignedByProfile.lastName || ''}`.trim(),
+          }
+        : null,
+    }));
   }
 
   /**
-   * Remove a trainer from a training batch
+   * Get all batch assignments for a specific trainer (by profileId)
+   */
+  async getBatchesByTrainer(profileId: string): Promise<any[]> {
+    const assignments = await prisma.trainingBatchTrainer.findMany({
+      where: {
+        trainerProfileId: profileId,
+      },
+      include: {
+        trainerProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+            workerCode: true,
+            candidateCode: true,
+          },
+        },
+        trainingBatch: true,
+      },
+      orderBy: [{ trainingBatch: { startDate: 'desc' } }, { shift: 'asc' }],
+    });
+
+    return assignments.map((a) => ({
+      id: a.id,
+      shift: a.shift,
+      assignedAt: a.assignedAt,
+      batch: a.trainingBatch,
+      trainer: {
+        id: a.trainerProfile?.id,
+        name: `${a.trainerProfile?.firstName || ''} ${a.trainerProfile?.lastName || ''}`.trim(),
+        workerCode: a.trainerProfile?.workerCode || a.trainerProfile?.candidateCode,
+        phone: a.trainerProfile?.phone,
+        email: a.trainerProfile?.email,
+      },
+    }));
+  }
+
+  /**
+   * Remove a trainer from a training batch by assignment ID
    */
   async removeTrainerFromBatch(assignmentId: string): Promise<void> {
-    const assignment = await prisma.trainer_batch_assignments.findUnique({
+    const assignment = await prisma.trainingBatchTrainer.findUnique({
       where: { id: assignmentId },
     });
 
@@ -229,106 +330,88 @@ export class TrainerBatchAssignmentService {
       throw new AppError('Trainer assignment not found', 404);
     }
 
-    await prisma.trainer_batch_assignments.update({
+    await prisma.trainingBatchTrainer.delete({
       where: { id: assignmentId },
-      data: { is_active: false },
     });
   }
 
   /**
-   * Validate that trainer doesn't have conflicting batches on same days
-   * Rules:
-   * - Max 2 batches per trainer per day (one per shift)
-   * - Cannot have 2 batches with same shift on same day
+   * Remove a trainer from a batch by profileId, batchId and shift
    */
-  private async validateTrainerSchedule(
-    trainerId: string,
-    startDate: Date,
-    endDate: Date,
-    shift: string
+  async removeTrainerByProfile(
+    trainerProfileId: string,
+    trainingBatchId: string,
+    shift?: 'shift_1' | 'shift_2'
   ): Promise<void> {
-    // Get all active assignments for this trainer that overlap with the date range
-    const overlappingAssignments = await prisma.trainer_batch_assignments.findMany({
+    const where: any = {
+      trainerProfileId,
+      trainingBatchId,
+    };
+
+    if (shift) {
+      where.shift = shift;
+    }
+
+    const assignment = await prisma.trainingBatchTrainer.findFirst({ where });
+
+    if (!assignment) {
+      throw new AppError('Trainer assignment not found', 404);
+    }
+
+    await prisma.trainingBatchTrainer.delete({
+      where: { id: assignment.id },
+    });
+  }
+
+  /**
+   * Remove trainer from a batch by shift only
+   */
+  async removeTrainerByShift(trainingBatchId: string, shift: 'shift_1' | 'shift_2'): Promise<void> {
+    const assignment = await prisma.trainingBatchTrainer.findFirst({
       where: {
-        trainer_id: trainerId,
-        is_active: true,
-        training_batches: {
-          OR: [
-            {
-              // Batch starts within our range
-              start_date: {
-                gte: startDate,
-                lte: endDate,
-              },
-            },
-            {
-              // Batch ends within our range
-              end_date: {
-                gte: startDate,
-                lte: endDate,
-              },
-            },
-            {
-              // Batch completely encompasses our range
-              AND: [{ start_date: { lte: startDate } }, { end_date: { gte: endDate } }],
-            },
-          ],
-        },
-      },
-      include: {
-        training_batches: {
-          select: {
-            id: true,
-            name: true,
-            start_date: true,
-            end_date: true,
-          },
-        },
+        trainingBatchId,
+        shift,
       },
     });
 
-    // Check for conflicts day by day
-    const conflicts: string[] = [];
-    const currentDate = new Date(startDate);
+    if (!assignment) {
+      throw new AppError(`No trainer assigned to ${shift === 'shift_1' ? 'Shift 1' : 'Shift 2'}`, 404);
+    }
 
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+    await prisma.trainingBatchTrainer.delete({
+      where: { id: assignment.id },
+    });
+  }
 
-      // Find batches that include this date
-      const assignmentsOnThisDay = overlappingAssignments.filter((assignment) => {
-        const batch = assignment.training_batches;
-        if (!batch || !batch.start_date || !batch.end_date) return false;
+  /**
+   * Update trainer assignment (change trainer for a shift)
+   */
+  async updateTrainerAssignment(
+    trainingBatchId: string,
+    shift: 'shift_1' | 'shift_2',
+    newTrainerProfileId: string,
+    assignedByProfileId?: string
+  ): Promise<any> {
+    // Remove existing assignment for this shift if exists
+    const existing = await prisma.trainingBatchTrainer.findFirst({
+      where: { trainingBatchId, shift },
+    });
 
-        const batchStart = new Date(batch.start_date);
-        const batchEnd = new Date(batch.end_date);
-        const checkDate = new Date(dateStr);
-
-        return checkDate >= batchStart && checkDate <= batchEnd;
+    if (existing) {
+      await prisma.trainingBatchTrainer.delete({
+        where: { id: existing.id },
       });
-
-      // Check if same shift already exists on this day
-      const sameShiftAssignment = assignmentsOnThisDay.find((a) => a.shift === shift);
-      if (sameShiftAssignment && sameShiftAssignment.training_batches) {
-        conflicts.push(
-          `${dateStr}: Trainer already has a ${shift === 'shift_1' ? 'Shift 1 (Morning)' : 'Shift 2 (Afternoon)'} batch (${sameShiftAssignment.training_batches.name})`
-        );
-      }
-
-      // Check if trainer already has 2 batches on this day
-      if (assignmentsOnThisDay.length >= 2) {
-        conflicts.push(`${dateStr}: Trainer already has 2 batches scheduled (max limit reached)`);
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    if (conflicts.length > 0) {
-      const errorMessage = `Cannot assign trainer to this batch. Schedule conflicts:\n${conflicts.slice(0, 5).join('\n')}${
-        conflicts.length > 5 ? `\n... and ${conflicts.length - 5} more conflicts` : ''
-      }`;
-      throw new AppError(errorMessage, 400);
-    }
+    // Assign new trainer
+    return this.assignTrainer({
+      trainerProfileId: newTrainerProfileId,
+      trainingBatchId,
+      shift,
+      assignedByProfileId,
+    });
   }
 }
 
-export default new TrainerBatchAssignmentService();
+export const trainerBatchAssignmentService = new TrainerBatchAssignmentService();
+export default trainerBatchAssignmentService;

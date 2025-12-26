@@ -15,12 +15,12 @@ export const createEnrollment = catchAsync(async (req: Request, res: Response) =
 
 // Bulk enroll multiple profiles (CRITICAL for workflow)
 export const bulkEnrollProfiles = catchAsync(async (req: Request, res: Response) => {
-  const { batch_id, profile_ids, enrolled_by_user_id, notes } = req.body;
+  const { batch_id, profileIds, enrolled_by_user_id, notes } = req.body;
 
-  if (!batch_id || !profile_ids || !Array.isArray(profile_ids) || profile_ids.length === 0) {
+  if (!batch_id || !profileIds || !Array.isArray(profileIds) || profileIds.length === 0) {
     return res.status(400).json({
       success: false,
-      message: 'batch_id and profile_ids array are required',
+      message: 'batch_id and profileIds array are required',
     });
   }
 
@@ -28,18 +28,18 @@ export const bulkEnrollProfiles = catchAsync(async (req: Request, res: Response)
   const enrollments = [];
   const errors = [];
 
-  for (const profile_id of profile_ids) {
+  for (const profileId of profileIds) {
     try {
       const enrollment = await batchEnrollmentService.createEnrollment({
         batch_id,
-        profile_id,
+        profileId,
         enrolled_by_user_id,
         notes,
       });
       enrollments.push(enrollment);
     } catch (error: unknown) {
       errors.push({
-        profile_id,
+        profileId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -52,7 +52,7 @@ export const bulkEnrollProfiles = catchAsync(async (req: Request, res: Response)
       enrolled: enrollments,
       failed: errors,
       summary: {
-        total: profile_ids.length,
+        total: profileIds.length,
         success: enrollments.length,
         failed: errors.length,
       },
@@ -62,11 +62,11 @@ export const bulkEnrollProfiles = catchAsync(async (req: Request, res: Response)
 
 // Get all enrollments with filters
 export const getAllEnrollments = catchAsync(async (req: Request, res: Response) => {
-  const { batch_id, profile_id, status, limit, offset, include_details } = req.query;
+  const { batch_id, profileId, status, limit, offset, include_details } = req.query;
 
   const filters = {
     batch_id: batch_id as string | undefined,
-    profile_id: profile_id as string | undefined,
+    profileId: profileId as string | undefined,
     status: status as string,
     limit: limit ? parseInt(limit as string) : undefined,
     offset: offset ? parseInt(offset as string) : undefined,

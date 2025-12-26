@@ -1,6 +1,6 @@
-import morgan from 'morgan';
-import { morganStream } from '@/config/logger';
 import { isDevelopment } from '@/config/env';
+import { morganStream } from '@/config/logger';
+import morgan from 'morgan';
 
 // Morgan format
 const morganFormat = isDevelopment

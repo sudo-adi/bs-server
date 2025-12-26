@@ -1,7 +1,7 @@
-import * as cron from 'node-cron';
+import { env } from '@/config/env';
 import logger from '@/config/logger';
 import scraperService from '@/services/utilities/newsScraper/newsScraper.service';
-import { env } from '@/config/env';
+import * as cron from 'node-cron';
 
 class ScraperCron {
   private cronJob: ReturnType<typeof cron.schedule> | null = null;
@@ -67,7 +67,7 @@ class ScraperCron {
       if (result.inserted_projects.length > 0) {
         logger.info('Newly inserted projects', {
           count: result.inserted_projects.length,
-          projects: result.inserted_projects.map((p) => ({
+          projects: result.inserted_projects.map((p: any) => ({
             id: p.id,
             name: p.project_name,
             value_cr: p.value_cr,

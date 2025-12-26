@@ -1,0 +1,11 @@
+{
+  "name": "Test Stage Flow Project",
+  "location": "Mumbai",
+  "employerId": "7ecb1de5-8c9c-4333-b8ee-d1a5a7076449",
+  "startDate": "2025-01-15",
+  "endDate": "2025-03-15",
+  "description": "Testing stage flow",
+  "resourceRequirements": [
+    {"skillCategoryId": "f026f22f-9316-46ff-b796-033fd42ee299", "requiredCount": 5}
+  ]
+}

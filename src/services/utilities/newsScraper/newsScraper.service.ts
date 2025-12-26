@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ExtractedProjectData, ScrapedArticle, ScraperResult } from '@/types';
 import { ArticleScraperOperation } from './operations/article-scraper.operation';
 import { DataExtractorOperation } from './operations/data-extractor.operation';

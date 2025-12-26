@@ -1,7 +1,7 @@
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { TRAINING_BATCH_STATUSES, TrainingBatchStatus } from '@/types/enums';
+import { TRAINING_BATCH_STATUSES, TrainingBatchStatus } from '@/constants/stages';
 
 export class TrainingBatchBaseQuery {
   async getAllBatches(filters?: {
@@ -10,17 +10,18 @@ export class TrainingBatchBaseQuery {
     limit?: number;
     offset?: number;
   }): Promise<{ batches: any[]; total: number }> {
-    const where: Prisma.training_batchesWhereInput = {};
+    const where: Prisma.TrainingBatchWhereInput = {};
 
     if (filters?.status) {
       // Handle multiple statuses (comma-separated)
       const statuses = filters.status.split(',').map((s) => s.trim());
 
       // Validate each status
+      const validStatuses = Object.values(TRAINING_BATCH_STATUSES);
       for (const status of statuses) {
-        if (!TRAINING_BATCH_STATUSES.includes(status as TrainingBatchStatus)) {
+        if (!validStatuses.includes(status as TrainingBatchStatus)) {
           throw new AppError(
-            `Invalid status: ${status}. Must be one of: ${TRAINING_BATCH_STATUSES.join(', ')}`,
+            `Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`,
             400
           );
         }
@@ -37,56 +38,67 @@ export class TrainingBatchBaseQuery {
     if (filters?.search) {
       where.OR = [
         { name: { contains: filters.search, mode: 'insensitive' } },
-        { program_name: { contains: filters.search, mode: 'insensitive' } },
+        { programName: { contains: filters.search, mode: 'insensitive' } },
         { code: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
     const [batches, total] = await Promise.all([
-      prisma.training_batches.findMany({
+      prisma.trainingBatch.findMany({
         where,
         include: {
-          batch_enrollments: {
+          enrollments: {
             where: {
               status: { not: 'withdrawn' },
             },
             select: { id: true },
           },
-          trainer_batch_assignments: {
-            where: {
-              is_active: true,
-            },
+          trainers: {
             include: {
-              trainers: {
-                include: {
-                  profiles: {
-                    select: {
-                      id: true,
-                      candidate_code: true,
-                      first_name: true,
-                      last_name: true,
-                      email: true,
-                      phone: true,
-                    },
-                  },
+              trainerProfile: {
+                select: {
+                  id: true,
+                  candidateCode: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phone: true,
                 },
               },
             },
           },
         },
-        orderBy: { start_date: 'desc' },
+        orderBy: { startDate: 'desc' },
         take: filters?.limit,
         skip: filters?.offset,
       }),
-      prisma.training_batches.count({ where }),
+      prisma.trainingBatch.count({ where }),
     ]);
 
-    // Add enrolled_count to each batch
-    const batchesWithCount = batches.map((batch) => ({
-      ...batch,
-      enrolled_count: batch.batch_enrollments.length,
-      batch_enrollments: undefined, // Remove from response
-    }));
+    // Transform batches: add enrolled_count and flatten trainers
+    const batchesWithCount = batches.map((batch) => {
+      // Get the first trainer (primary trainer) and flatten the structure
+      const primaryTrainer = batch.trainers?.[0];
+      const trainerData = primaryTrainer?.trainerProfile
+        ? {
+            id: primaryTrainer.trainerProfile.id,
+            name: `${primaryTrainer.trainerProfile.firstName || ''} ${primaryTrainer.trainerProfile.lastName || ''}`.trim() || null,
+            email: primaryTrainer.trainerProfile.email || null,
+            phone: primaryTrainer.trainerProfile.phone || null,
+            employeeCode: primaryTrainer.trainerProfile.candidateCode || null,
+            shift: primaryTrainer.shift || null,
+          }
+        : null;
+
+      // Destructure to remove original trainers array and enrollments
+      const { trainers: _originalTrainers, enrollments, ...batchWithoutTrainersAndEnrollments } = batch;
+
+      return {
+        ...batchWithoutTrainersAndEnrollments,
+        enrolled_count: enrollments.length,
+        trainers: trainerData, // Flatten to single trainer object (or null)
+      };
+    });
 
     return {
       batches: batchesWithCount,
@@ -94,58 +106,47 @@ export class TrainingBatchBaseQuery {
     };
   }
 
-  async getBatchById(
-    id: string,
-    includeEnrollments = false
-  ): Promise<any> {
-    const batch = await prisma.training_batches.findUnique({
+  async getBatchById(id: string, includeEnrollments = false): Promise<any> {
+    const batch = await prisma.trainingBatch.findUnique({
       where: { id },
       include: {
-        trainer_batch_assignments: {
-          where: {
-            is_active: true,
-          },
+        trainers: {
           include: {
-            trainers: {
-              include: {
-                profiles: {
-                  select: {
-                    id: true,
-                    candidate_code: true,
-                    first_name: true,
-                    last_name: true,
-                    email: true,
-                    phone: true,
-                  },
-                },
+            trainerProfile: {
+              select: {
+                id: true,
+                candidateCode: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
               },
             },
           },
         },
         ...(includeEnrollments
           ? {
-              batch_enrollments: {
+              enrollments: {
                 include: {
-                  profiles: {
+                  profile: {
                     select: {
                       id: true,
-                      candidate_code: true,
-                      first_name: true,
-                      middle_name: true,
-                      last_name: true,
+                      candidateCode: true,
+                      firstName: true,
+                      middleName: true,
+                      lastName: true,
                       phone: true,
                       email: true,
-                      current_stage: true,
-                      previous_stage: true,
+                      currentStage: true,
                       gender: true,
-                      date_of_birth: true,
-                      profile_photo_url: true,
-                      created_at: true,
-                      updated_at: true,
+                      dateOfBirth: true,
+                      profilePhotoURL: true,
+                      createdAt: true,
+                      updatedAt: true,
                     },
                   },
                 },
-                orderBy: { enrollment_date: 'desc' },
+                orderBy: { enrollmentDate: 'desc' },
               },
             }
           : {}),
@@ -156,13 +157,32 @@ export class TrainingBatchBaseQuery {
       throw new AppError('Training batch not found', 404);
     }
 
-    return batch;
+    // Get the first trainer (primary trainer) and flatten the structure
+    const primaryTrainer = batch.trainers?.[0];
+    const trainerData = primaryTrainer?.trainerProfile
+      ? {
+          id: primaryTrainer.trainerProfile.id,
+          name: `${primaryTrainer.trainerProfile.firstName || ''} ${primaryTrainer.trainerProfile.lastName || ''}`.trim() || null,
+          email: primaryTrainer.trainerProfile.email || null,
+          phone: primaryTrainer.trainerProfile.phone || null,
+          employeeCode: primaryTrainer.trainerProfile.candidateCode || null,
+          shift: primaryTrainer.shift || null,
+        }
+      : null;
+
+    // Destructure to remove original trainers array, then add flattened version
+    const { trainers: _originalTrainers, ...batchWithoutTrainers } = batch;
+
+    return {
+      ...batchWithoutTrainers,
+      trainers: trainerData, // Flatten to single trainer object (or null)
+    };
   }
 
   async getEnrollmentCount(batchId: string): Promise<number> {
-    const count = await prisma.batch_enrollments.count({
+    const count = await prisma.trainingBatchEnrollment.count({
       where: {
-        batch_id: batchId,
+        batchId: batchId,
         status: {
           not: 'withdrawn',
         },

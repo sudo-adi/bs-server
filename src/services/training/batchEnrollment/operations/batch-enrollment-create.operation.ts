@@ -1,44 +1,45 @@
 import prisma from '@/config/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { BatchEnrollment, CreateBatchEnrollmentDto } from '@/types';
-import {
-  BATCH_ENROLLMENT_STATUSES,
-  BatchEnrollmentStatus,
-  mapBatchEnrollmentStatusToProfileStage,
-} from '@/types/enums';
-import { CodeGenerator } from '@/utils/codeGenerator';
+import { generateUuid } from '@/utils/uuidHelper';
 
 export class BatchEnrollmentCreateOperation {
-  static async create(data: CreateBatchEnrollmentDto): Promise<BatchEnrollment> {
+  static async create(data: {
+    batch_id?: string;
+    profileId?: string;
+    enrollment_date?: Date;
+    status?: string;
+    notes?: string;
+    enrolled_by_user_id?: string;
+  }): Promise<any> {
     return await prisma.$transaction(async (tx) => {
-      const batch = await tx.training_batches.findUnique({
+      const batch = await tx.trainingBatch.findUnique({
         where: { id: data.batch_id ?? undefined },
-        select: { max_capacity: true },
+        select: { maxCapacity: true },
       });
 
       if (!batch) {
         throw new AppError('Training batch not found', 404);
       }
 
-      const currentEnrolled = await tx.batch_enrollments.count({
+      const currentEnrolled = await tx.trainingBatchEnrollment.count({
         where: {
-          batch_id: data.batch_id,
+          batchId: data.batch_id,
           status: {
-            notIn: [BatchEnrollmentStatus.DROPPED, BatchEnrollmentStatus.FAILED],
+            notIn: ['dropped', 'failed'],
           },
         },
       });
 
-      if (batch.max_capacity && currentEnrolled >= batch.max_capacity) {
+      if (batch.maxCapacity && currentEnrolled >= batch.maxCapacity) {
         throw new AppError('Training batch is full', 400);
       }
 
-      const existing = await tx.batch_enrollments.findFirst({
+      const existing = await tx.trainingBatchEnrollment.findFirst({
         where: {
-          batch_id: data.batch_id,
-          profile_id: data.profile_id,
+          batchId: data.batch_id,
+          profileId: data.profileId,
           status: {
-            notIn: [BatchEnrollmentStatus.DROPPED, BatchEnrollmentStatus.FAILED],
+            notIn: ['dropped', 'failed'],
           },
         },
       });
@@ -47,63 +48,67 @@ export class BatchEnrollmentCreateOperation {
         throw new AppError('Profile is already enrolled in this batch', 400);
       }
 
-      const enrollmentStatus = data.status || BatchEnrollmentStatus.ENROLLED;
-      if (!BATCH_ENROLLMENT_STATUSES.includes(enrollmentStatus as BatchEnrollmentStatus)) {
-        throw new AppError(
-          `Invalid status: ${enrollmentStatus}. Must be one of: ${BATCH_ENROLLMENT_STATUSES.join(', ')}`,
-          400
-        );
-      }
+      const enrollmentStatus = data.status || 'enrolled';
 
-      const enrollment = await tx.batch_enrollments.create({
+      const enrollment = await tx.trainingBatchEnrollment.create({
         data: {
-          batch_id: data.batch_id,
-          profile_id: data.profile_id,
-          enrollment_date: data.enrollment_date || new Date(),
+          id: generateUuid(),
+          batchId: data.batch_id,
+          profileId: data.profileId,
+          enrollmentDate: data.enrollment_date || new Date(),
           status: enrollmentStatus,
           notes: data.notes,
-          enrolled_by_user_id: data.enrolled_by_user_id,
+          enrolledByProfileId: data.enrolled_by_user_id,
         },
       });
 
       // Update candidate code from BSC to BST when enrolling in training
-      if (data.profile_id) {
-        const profile = await tx.profiles.findUnique({
-          where: { id: data.profile_id },
-          select: { candidate_code: true },
+      if (data.profileId) {
+        const profile = await tx.profile.findUnique({
+          where: { id: data.profileId },
+          select: { candidateCode: true, currentStage: true },
         });
 
         // Check if the candidate has a BSC code (candidate code)
-        if (profile?.candidate_code?.startsWith('BSC-')) {
+        if (profile?.candidateCode?.startsWith('BSC-')) {
           // Generate new trainee code (BST)
-          const newCode = await CodeGenerator.generate('trainee');
+          const lastTrainee = await tx.profile.findFirst({
+            where: { candidateCode: { startsWith: 'BST-' } },
+            orderBy: { candidateCode: 'desc' },
+            select: { candidateCode: true },
+          });
+
+          let nextNum = 1;
+          if (lastTrainee?.candidateCode) {
+            const match = lastTrainee.candidateCode.match(/BST-(\d+)/);
+            if (match) nextNum = parseInt(match[1]) + 1;
+          }
+          const newCode = `BST-${String(nextNum).padStart(5, '0')}`;
 
           // Update the profile with the new code
-          await tx.profiles.update({
-            where: { id: data.profile_id },
-            data: { candidate_code: newCode },
+          await tx.profile.update({
+            where: { id: data.profileId },
+            data: { candidateCode: newCode },
           });
         }
-      }
 
-      const newStage = mapBatchEnrollmentStatusToProfileStage(
-        enrollmentStatus as BatchEnrollmentStatus
-      );
-      if (newStage && data.profile_id) {
-        const latestTransition = await tx.stage_transitions.findFirst({
-          where: { profile_id: data.profile_id },
-          orderBy: { transitioned_at: 'desc' },
-          select: { to_stage: true },
+        // Create stage history record
+        await tx.profileStageHistory.create({
+          data: {
+            id: generateUuid(),
+            profileId: data.profileId,
+            previousStage: profile?.currentStage || null,
+            newStage: 'training',
+            reason: `Enrolled in training batch with status: ${enrollmentStatus}`,
+            changedByProfileId: data.enrolled_by_user_id,
+            changedAt: new Date(),
+          },
         });
 
-        await tx.stage_transitions.create({
-          data: {
-            profile_id: data.profile_id,
-            from_stage: latestTransition?.to_stage || null,
-            to_stage: newStage,
-            transitioned_by_user_id: data.enrolled_by_user_id,
-            notes: `Enrolled in training batch with status: ${enrollmentStatus}`,
-          },
+        // Update profile current stage
+        await tx.profile.update({
+          where: { id: data.profileId },
+          data: { currentStage: 'training' },
         });
       }
 

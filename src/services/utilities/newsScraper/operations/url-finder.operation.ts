@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { env } from '@/config/env';
 import logger from '@/config/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';

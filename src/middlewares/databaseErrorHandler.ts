@@ -105,7 +105,7 @@ export const databaseErrorHandler = (err: any, req: Request, res: Response, next
 function extractForeignKeyError(err: any): string {
   if (err.constraint) {
     // Extract referenced table from constraint name
-    // Example: batch_enrollments_profile_id_fkey -> profile_id
+    // Example: batch_enrollments_profileId_fkey -> profileId
     const match = err.constraint.match(/_([a-z_]+)_fkey$/);
     if (match) {
       const fieldName = match[1];

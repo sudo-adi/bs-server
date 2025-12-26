@@ -4,7 +4,7 @@ import prisma from '@/config/prisma';
 export class NewsUpdateDeleteOperation {
   static async delete(id: string): Promise<boolean> {
     try {
-      await prisma.news_updates.delete({
+      await prisma.newsUpdate.delete({
         where: { id },
       });
       logger.info('News update deleted successfully', { id });

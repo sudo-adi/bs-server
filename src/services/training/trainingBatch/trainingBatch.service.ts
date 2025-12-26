@@ -1,9 +1,9 @@
+import { TrainingBatch } from '@/generated/prisma';
 import {
-  CreateTrainingBatchDto,
-  TrainingBatch,
-  TrainingBatchWithEnrollments,
-  UpdateTrainingBatchDto,
-} from '@/types';
+  CreateTrainingBatchRequest,
+  TrainingBatchDetailDto,
+  UpdateTrainingBatchRequest,
+} from '@/dtos/training/trainingBatch.dto';
 import { TrainingBatchCreateOperation } from './operations/training-batch-create.operation';
 import { TrainingBatchDeleteOperation } from './operations/training-batch-delete.operation';
 import { TrainingBatchUpdateOperation } from './operations/training-batch-update.operation';
@@ -19,7 +19,7 @@ export class TrainingBatchService {
     search?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ batches: TrainingBatch[]; total: number }> {
+  }): Promise<{ batches: any[]; total: number }> {
     const query = new TrainingBatchBaseQuery();
     return query.getAllBatches(filters);
   }
@@ -27,7 +27,7 @@ export class TrainingBatchService {
   async getBatchById(
     id: string,
     includeEnrollments?: boolean
-  ): Promise<TrainingBatchWithEnrollments> {
+  ): Promise<TrainingBatchDetailDto> {
     const query = new TrainingBatchBaseQuery();
     return query.getBatchById(id, includeEnrollments);
   }
@@ -41,11 +41,11 @@ export class TrainingBatchService {
   // CREATE, UPDATE, DELETE OPERATIONS
   // ============================================================================
 
-  async createBatch(data: CreateTrainingBatchDto): Promise<TrainingBatch> {
-    return TrainingBatchCreateOperation.create(data);
+  async createBatch(data: CreateTrainingBatchRequest, createdByProfileId?: string): Promise<TrainingBatch> {
+    return TrainingBatchCreateOperation.create(data, createdByProfileId);
   }
 
-  async updateBatch(id: string, data: UpdateTrainingBatchDto): Promise<TrainingBatch> {
+  async updateBatch(id: string, data: UpdateTrainingBatchRequest): Promise<TrainingBatch> {
     const operation = new TrainingBatchUpdateOperation();
     return operation.updateTrainingBatch(id, data);
   }

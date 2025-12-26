@@ -1,11 +1,11 @@
 import prisma from '@/config/prisma';
-import { AppError } from '@/middlewares/errorHandler';
 import { Prisma } from '@/generated/prisma';
+import { AppError } from '@/middlewares/errorHandler';
 
 export class BatchEnrollmentDeleteOperation {
   static async delete(id: string): Promise<void> {
     try {
-      await prisma.batch_enrollments.delete({
+      await prisma.trainingBatchEnrollment.delete({
         where: { id },
       });
     } catch (error) {

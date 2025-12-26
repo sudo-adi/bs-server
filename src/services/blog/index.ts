@@ -1,3 +1,3 @@
-import blogService from './blog/blog.service';
+import blogService from './blog.service';
 
 export { blogService };

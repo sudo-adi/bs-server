@@ -23,11 +23,6 @@ class PrismaClientSingleton {
             level: 'warn',
           },
         ],
-        datasources: {
-          db: {
-            url: process.env.DATABASE_URL,
-          },
-        },
       });
 
       // Log queries in development
@@ -71,16 +66,27 @@ class PrismaClientSingleton {
     }
   }
 
-  public static async testConnection(): Promise<boolean> {
-    try {
-      const prisma = PrismaClientSingleton.getInstance();
-      await prisma.$queryRaw`SELECT 1`;
-      logger.info('Prisma database connection successful');
-      return true;
-    } catch (error) {
-      logger.error('Prisma database connection failed', error);
-      return false;
+  public static async testConnection(retries = 3): Promise<boolean> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        logger.info(`Testing Prisma connection (attempt ${attempt}/${retries})...`);
+        const prisma = PrismaClientSingleton.getInstance();
+        await prisma.$queryRaw`SELECT 1`;
+        logger.info('Prisma database connection successful');
+        return true;
+      } catch (error: any) {
+        logger.error(`Prisma connection attempt ${attempt} failed:`, error.message || error);
+
+        if (attempt < retries) {
+          const waitTime = attempt * 2000; // Exponential backoff: 2s, 4s, 6s
+          logger.info(`Retrying in ${waitTime / 1000} seconds...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+        }
+      }
     }
+
+    logger.error('All Prisma connection attempts failed');
+    return false;
   }
 }
 

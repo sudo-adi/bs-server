@@ -7,38 +7,43 @@ class Database {
   private static instance: Database;
 
   private constructor() {
-    // For Supabase, use connection pooler on port 6543 (IPv4-friendly)
-    // Or use direct connection with proper family configuration
+    // AWS RDS PostgreSQL connection configuration
     const poolConfig: any = {
       host: env.DB_HOST,
       port: env.DB_PORT,
       database: env.DB_NAME,
       user: env.DB_USER,
       password: env.DB_PASSWORD,
-      max: 50, // Reduced from 20 to 5 for Supabase transaction mode pooler
-      min: 1,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
+      max: 20, // Reasonable pool size for AWS RDS
+      min: 2, // Keep minimum connections alive
+      idleTimeoutMillis: 10000, // Close idle connections after 10s
+      connectionTimeoutMillis: 10000, // Reduce timeout to fail faster
       ssl: {
         rejectUnauthorized: false,
       },
-      // Force IPv4 to avoid DNS resolution issues with IPv6
       family: 4,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 5000,
     };
 
-    // In production environments (like Render), force IPv4 by setting family to 4
-    // This is more reliable than custom DNS lookup
+    // In production environments (like Render), add search path
     if (env.NODE_ENV === 'production') {
       poolConfig.options = '-c search_path=public';
-      // Set keepalive to maintain connection stability
-      poolConfig.keepAlive = true;
-      poolConfig.keepAliveInitialDelayMillis = 10000;
     }
 
     this.pool = new Pool(poolConfig);
 
-    this.pool.on('error', (err) => {
-      logger.error('Unexpected error on idle client', err);
+    this.pool.on('error', (err: any) => {
+      logger.error('Unexpected error on idle client', err.message || err);
+      // Don't crash on connection errors, let the pool handle reconnection
+    });
+
+    this.pool.on('connect', () => {
+      logger.debug('New client connected to database pool');
+    });
+
+    this.pool.on('remove', () => {
+      logger.debug('Client removed from database pool');
     });
   }
 
@@ -70,15 +75,26 @@ class Database {
     return await this.pool.connect();
   }
 
-  public async testConnection(): Promise<boolean> {
-    try {
-      const result = await this.query('SELECT NOW()');
-      logger.info('Database connection successful', { time: result.rows[0].now });
-      return true;
-    } catch (error) {
-      logger.error('Database connection failed', error);
-      return false;
+  public async testConnection(retries = 3): Promise<boolean> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        logger.info(`Testing database connection (attempt ${attempt}/${retries})...`);
+        const result = await this.query('SELECT NOW()');
+        logger.info('Database connection successful', { time: result.rows[0].now });
+        return true;
+      } catch (error: any) {
+        logger.error(`Database connection attempt ${attempt} failed:`, error.message || error);
+
+        if (attempt < retries) {
+          const waitTime = attempt * 2000; // Exponential backoff: 2s, 4s, 6s
+          logger.info(`Retrying in ${waitTime / 1000} seconds...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+        }
+      }
     }
+
+    logger.error('All database connection attempts failed');
+    return false;
   }
 
   public async killAllConnections(): Promise<void> {

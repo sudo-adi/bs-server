@@ -1,31 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { BlogFilters, CreateBlogDto, UpdateBlogDto } from '@/types';
-import prisma from '../../config/prisma';
-import { Prisma } from '../../generated/prisma';
+import prisma from '@/config/prisma';
+import { Prisma } from '@/generated/prisma';
+
+export interface BlogFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+}
+
+export interface CreateBlogDto {
+  title: string;
+  content?: string;
+  imageUrl?: string;
+  category?: string;
+}
+
+export interface UpdateBlogDto {
+  title?: string;
+  content?: string;
+  imageUrl?: string;
+  category?: string;
+}
 
 export class BlogService {
-  async createBlog(userId: string, data: CreateBlogDto) {
-    // Verify user exists before creating blog
-    const userExists = await prisma.users.findUnique({
-      where: { id: userId },
-    });
-
-    const blog = await prisma.blogs.create({
+  async createBlog(profileId: string, data: CreateBlogDto) {
+    const blog = await prisma.blog.create({
       data: {
         title: data.title,
         content: data.content,
-        image_url: data.image_url,
+        imageUrl: data.imageUrl,
         category: data.category,
-        created_by_user_id: userExists ? userId : null,
-      } as any,
-      include: {
-        users: {
-          select: {
-            id: true,
-            full_name: true,
-            username: true,
-          },
-        },
+        createdByProfileId: profileId || null,
+        createdAt: new Date(),
       },
     });
 
@@ -37,7 +43,7 @@ export class BlogService {
     const limit = filters.limit || 10;
     const offset = (page - 1) * limit;
 
-    const where: Prisma.blogsWhereInput = {};
+    const where: Prisma.BlogWhereInput = {};
 
     if (filters.category) {
       where.category = filters.category;
@@ -51,22 +57,13 @@ export class BlogService {
     }
 
     const [blogs, total] = await Promise.all([
-      prisma.blogs.findMany({
+      prisma.blog.findMany({
         where,
-        include: {
-          users: {
-            select: {
-              id: true,
-              full_name: true,
-              username: true,
-            },
-          },
-        },
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
       }),
-      prisma.blogs.count({ where }),
+      prisma.blog.count({ where }),
     ]);
 
     return {
@@ -78,101 +75,43 @@ export class BlogService {
   }
 
   async getBlogById(id: string) {
-    const blog = await prisma.blogs.findUnique({
-      where: { id: BigInt(id) } as any,
-      include: {
-        users: {
-          select: {
-            id: true,
-            full_name: true,
-            username: true,
-          },
-        },
-      },
+    const blog = await prisma.blog.findUnique({
+      where: { id: BigInt(id) },
     });
 
     return blog;
   }
 
   async updateBlog(id: string, data: UpdateBlogDto) {
-    const updateData: any = {};
+    const updateData: Prisma.BlogUpdateInput = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;
-    if (data.image_url !== undefined) updateData.image_url = data.image_url;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
     if (data.category !== undefined) updateData.category = data.category;
 
-    const blog = await prisma.blogs.update({
-      where: { id: BigInt(id) } as any,
+    const blog = await prisma.blog.update({
+      where: { id: BigInt(id) },
       data: updateData,
-      include: {
-        users: {
-          select: {
-            id: true,
-            full_name: true,
-            username: true,
-          },
-        },
-      },
     });
 
     return blog;
   }
 
   async deleteBlog(id: string) {
-    await prisma.blogs.delete({
-      where: { id: BigInt(id) } as any,
+    await prisma.blog.delete({
+      where: { id: BigInt(id) },
     });
   }
 
   async getPublishedBlogs(filters: BlogFilters) {
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const offset = (page - 1) * limit;
-
-    const where: Prisma.blogsWhereInput = {};
-
-    if (filters.category) {
-      where.category = filters.category;
-    }
-
-    if (filters.search) {
-      where.OR = [
-        { title: { contains: filters.search, mode: 'insensitive' } },
-        { content: { contains: filters.search, mode: 'insensitive' } },
-      ];
-    }
-
-    const [blogs, total] = await Promise.all([
-      prisma.blogs.findMany({
-        where,
-        include: {
-          users: {
-            select: {
-              id: true,
-              full_name: true,
-              username: true,
-            },
-          },
-        },
-        orderBy: { created_at: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.blogs.count({ where }),
-    ]);
-
-    return {
-      blogs,
-      total,
-      limit,
-      offset,
-    };
+    // Same as getAllBlogs for now - add published filter when schema supports it
+    return this.getAllBlogs(filters);
   }
 
   async getBlogCategories() {
-    const categories = await prisma.blogs.findMany({
+    const categories = await prisma.blog.findMany({
       where: {
-        category: { not: null } as any,
+        category: { not: null },
       },
       select: {
         category: true,

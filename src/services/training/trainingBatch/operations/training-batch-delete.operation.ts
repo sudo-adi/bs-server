@@ -5,7 +5,7 @@ import { AppError } from '@/middlewares';
 export class TrainingBatchDeleteOperation {
   async delete(id: string): Promise<void> {
     try {
-      await prisma.training_batches.delete({
+      await prisma.trainingBatch.delete({
         where: { id },
       });
     } catch (error) {

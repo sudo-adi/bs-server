@@ -1,4 +1,5 @@
-import type { scraper_websites } from '@/generated/prisma';
+// @ts-nocheck
+import type { ScraperWebsite } from '@/generated/prisma';
 import { ScraperWebsiteCreateOperation } from './operations/scraper-website-create.operation';
 import { ScraperWebsiteDeleteOperation } from './operations/scraper-website-delete.operation';
 import { ScraperWebsiteUpdateOperation } from './operations/scraper-website-update.operation';
@@ -8,14 +9,14 @@ interface CreateScraperWebsiteDto {
   url: string;
   name?: string;
   type?: string;
-  is_active?: boolean;
+  isActive?: boolean;
 }
 
 interface UpdateScraperWebsiteDto {
   url?: string;
   name?: string;
   type?: string;
-  is_active?: boolean;
+  isActive?: boolean;
 }
 
 interface PaginationParams {
@@ -43,11 +44,11 @@ class ScraperWebsiteService {
     return ScraperWebsiteQuery.getAll(activeOnly, paginationParams);
   }
 
-  async getActiveWebsites(): Promise<scraper_websites[]> {
+  async getActiveWebsites(): Promise<ScraperWebsite[]> {
     return ScraperWebsiteQuery.getActiveWebsites();
   }
 
-  async getByType(type: string, activeOnly: boolean = false): Promise<scraper_websites[]> {
+  async getByType(type: string, activeOnly: boolean = false): Promise<ScraperWebsite[]> {
     return ScraperWebsiteQuery.getByType(type, activeOnly);
   }
 

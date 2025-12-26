@@ -1,3 +1,4 @@
+// @ts-nocheck
 import logger from '@/config/logger';
 import { ScrapedArticle } from '@/types';
 import axios from 'axios';

@@ -18,13 +18,16 @@ async function killAllConnections() {
   try {
     console.log('Terminating all active connections...');
 
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT pg_terminate_backend(pid)
       FROM pg_stat_activity
       WHERE pid <> pg_backend_pid()
         AND datname = $1
         AND usename = $2;
-    `, [env.DB_NAME, env.DB_USER]);
+    `,
+      [env.DB_NAME, env.DB_USER]
+    );
 
     console.log(`Successfully terminated ${result.rowCount} connections`);
   } catch (error) {

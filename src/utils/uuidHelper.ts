@@ -1,3 +1,9 @@
+import { randomUUID } from 'crypto';
+
+export function generateUuid(): string {
+  return randomUUID();
+}
+
 export function cleanUuid(value: string | null | undefined): string | null {
   if (!value || typeof value !== 'string' || value.trim() === '') {
     return null;

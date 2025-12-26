@@ -1,8 +1,6 @@
 import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
 import { AppError } from '@/middlewares/errorHandler';
-import { TrainingBatchWithEnrollments } from '@/types';
-import { TRAINING_BATCH_STATUSES, TrainingBatchStatus } from '@/types/enums';
 
 export class TrainingBatchBaseQuery {
   async getAllBatches(filters?: {
@@ -11,50 +9,43 @@ export class TrainingBatchBaseQuery {
     limit?: number;
     offset?: number;
   }): Promise<{ batches: any[]; total: number }> {
-    const where: Prisma.training_batchesWhereInput = {};
+    const where: Prisma.TrainingBatchWhereInput = {};
 
     if (filters?.status) {
-      // Validate status
-      if (!TRAINING_BATCH_STATUSES.includes(filters.status as TrainingBatchStatus)) {
-        throw new AppError(
-          `Invalid status: ${filters.status}. Must be one of: ${TRAINING_BATCH_STATUSES.join(', ')}`,
-          400
-        );
-      }
       where.status = filters.status;
     }
 
     if (filters?.search) {
       where.OR = [
         { name: { contains: filters.search, mode: 'insensitive' } },
-        { program_name: { contains: filters.search, mode: 'insensitive' } },
+        { programName: { contains: filters.search, mode: 'insensitive' } },
         { code: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
     const [batches, total] = await Promise.all([
-      prisma.training_batches.findMany({
+      prisma.trainingBatch.findMany({
         where,
         include: {
-          batch_enrollments: {
+          enrollments: {
             where: {
               status: { not: 'withdrawn' },
             },
             select: { id: true },
           },
         },
-        orderBy: { start_date: 'desc' },
+        orderBy: { startDate: 'desc' },
         take: filters?.limit,
         skip: filters?.offset,
       }),
-      prisma.training_batches.count({ where }),
+      prisma.trainingBatch.count({ where }),
     ]);
 
     // Add enrolled_count to each batch
     const batchesWithCount = batches.map((batch) => ({
       ...batch,
-      enrolled_count: batch.batch_enrollments.length,
-      batch_enrollments: undefined, // Remove from response
+      enrolled_count: batch.enrollments.length,
+      enrollments: undefined, // Remove from response
     }));
 
     return {
@@ -63,19 +54,16 @@ export class TrainingBatchBaseQuery {
     };
   }
 
-  async getBatchById(
-    id: string,
-    includeEnrollments = false
-  ): Promise<TrainingBatchWithEnrollments> {
-    const batch = await prisma.training_batches.findUnique({
+  async getBatchById(id: string, includeEnrollments = false): Promise<any> {
+    const batch = await prisma.trainingBatch.findUnique({
       where: { id },
       include: includeEnrollments
         ? {
-            batch_enrollments: {
+            enrollments: {
               include: {
-                profiles: true,
+                profile: true,
               },
-              orderBy: { enrollment_date: 'desc' },
+              orderBy: { enrollmentDate: 'desc' },
             },
           }
         : undefined,
@@ -89,9 +77,9 @@ export class TrainingBatchBaseQuery {
   }
 
   async getEnrollmentCount(batchId: string): Promise<number> {
-    const count = await prisma.batch_enrollments.count({
+    const count = await prisma.trainingBatchEnrollment.count({
       where: {
-        batch_id: batchId,
+        batchId: batchId,
         status: {
           not: 'withdrawn',
         },

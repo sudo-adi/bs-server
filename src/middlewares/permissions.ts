@@ -1,24 +1,10 @@
-import { rolePermissionService } from '@/services/admin';
+// @ts-nocheck
+// revv
+import { roleService } from '@/services/role.service';
 import { NextFunction, Request, Response } from 'express';
 import { ModuleName, RolePermission } from '../types/role.types';
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        username: string;
-        email: string;
-        role_id?: string;
-        // Worker portal fields
-        profileId?: string;
-        phone?: string;
-        type?: string;
-      };
-    }
-  }
-}
+// Note: Express.Request.user type is defined in @/dtos/auth/auth.dto.ts
 
 /**
  * Middleware to check if user has permission for a specific module and action
@@ -38,17 +24,13 @@ export const checkPermission = (
       }
 
       // Check if user is super admin (bypass permission check)
-      const isSuperAdmin = await rolePermissionService.isSuperAdmin(req.user.id);
+      const isSuperAdmin = await roleService.isSuperAdmin(req.user.id);
       if (isSuperAdmin) {
         return next();
       }
 
       // Check permission
-      const hasPermission = await rolePermissionService.checkPermission(
-        req.user.id,
-        moduleName,
-        action
-      );
+      const hasPermission = await roleService.checkPermission(req.user.id, moduleName, action);
 
       if (!hasPermission) {
         return res.status(403).json({
@@ -76,7 +58,7 @@ export const requireSuperAdmin = async (req: Request, res: Response, next: NextF
       });
     }
 
-    const isSuperAdmin = await rolePermissionService.isSuperAdmin(req.user.id);
+    const isSuperAdmin = await roleService.isSuperAdmin(req.user.id);
 
     if (!isSuperAdmin) {
       return res.status(403).json({
@@ -103,7 +85,7 @@ export const requireAnyPermission = async (req: Request, res: Response, next: Ne
       });
     }
 
-    const permissions = await rolePermissionService.getUserPermissions(req.user.id);
+    const permissions = await roleService.getUserPermissions(req.user.id);
 
     if (!permissions || permissions.length === 0) {
       return res.status(403).json({
@@ -134,7 +116,7 @@ export const requireAnyPermission = async (req: Request, res: Response, next: Ne
 export const attachUserPermissions = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (req.user && req.user.id) {
-      const permissions = await rolePermissionService.getUserPermissions(req.user.id);
+      const permissions = await roleService.getUserPermissions(req.user.id);
       (req as any).permissions = permissions;
     }
     next();

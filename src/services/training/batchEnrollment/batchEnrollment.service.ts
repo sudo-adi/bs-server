@@ -1,9 +1,3 @@
-import {
-  BatchEnrollment,
-  BatchEnrollmentWithDetails,
-  CreateBatchEnrollmentDto,
-  UpdateBatchEnrollmentDto,
-} from '@/types';
 import { BatchEnrollmentCreateOperation } from './operations/batch-enrollment-create.operation';
 import { BatchEnrollmentDeleteOperation } from './operations/batch-enrollment-delete.operation';
 import { BatchEnrollmentUpdateOperation } from './operations/batch-enrollment-update.operation';
@@ -13,25 +7,32 @@ export class BatchEnrollmentService {
   async getAllEnrollments(
     filters?: {
       batch_id?: string;
-      profile_id?: string;
+      profileId?: string;
       status?: string;
       limit?: number;
       offset?: number;
     },
     includeDetails = false
-  ): Promise<{ enrollments: BatchEnrollmentWithDetails[]; total: number }> {
+  ): Promise<{ enrollments: any[]; total: number }> {
     return BatchEnrollmentQuery.getAllEnrollments(filters, includeDetails);
   }
 
-  async getEnrollmentById(id: string, includeDetails = false): Promise<BatchEnrollmentWithDetails> {
+  async getEnrollmentById(id: string, includeDetails = false): Promise<any> {
     return BatchEnrollmentQuery.getEnrollmentById(id, includeDetails);
   }
 
-  async createEnrollment(data: CreateBatchEnrollmentDto): Promise<BatchEnrollment> {
+  async createEnrollment(data: {
+    batch_id?: string;
+    profileId?: string;
+    enrollment_date?: Date;
+    status?: string;
+    notes?: string;
+    enrolled_by_user_id?: string;
+  }): Promise<any> {
     return BatchEnrollmentCreateOperation.create(data);
   }
 
-  async updateEnrollment(id: string, data: UpdateBatchEnrollmentDto): Promise<BatchEnrollment> {
+  async updateEnrollment(id: string, data: Record<string, any>): Promise<any> {
     return BatchEnrollmentUpdateOperation.update(id, data);
   }
 
@@ -53,7 +54,7 @@ export class BatchEnrollmentService {
       try {
         await this.updateEnrollment(enrollmentId, {
           status: 'completed',
-          completion_date: new Date(),
+          completionDate: new Date(),
         });
         successCount++;
       } catch (error) {

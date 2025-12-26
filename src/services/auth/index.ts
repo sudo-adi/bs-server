@@ -1,5 +1,18 @@
-// Centralized exports for auth services
-import employerAuthService from './employerAuth/employerAuth.service';
-import authService from './userAuth/auth.service';
+// Service facade
+export {
+  AuthService,
+  default as authService,
+  type AuthMethod,
+  type EmployerSignupRequest,
+  type LoginRequest,
+  type SendOtpRequest,
+  type UserType,
+  type WorkerSignupRequest,
+  type WorkerType,
+} from './auth.service';
 
-export { authService, employerAuthService };
+// Helpers
+export * from './helpers';
+
+// Operations
+export * from './operations';
