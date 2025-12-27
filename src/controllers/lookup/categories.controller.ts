@@ -19,6 +19,7 @@ export class SkillCategoryController {
         isActive:
           req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
         categoryType: req.query.categoryType as string,
+        workerType: req.query.workerType as string,
       };
       const result = await skillCategoryService.getAll(query);
       res.status(200).json({ success: true, ...result });

@@ -3,8 +3,8 @@ import prisma from '@/config/prisma';
 import { Prisma } from '@/generated/prisma';
 
 export class SkillCategoryService {
-  async getAll(query: { page?: number; limit?: number; search?: string; categoryType?: string }) {
-    const { page = 1, limit = 50, search, categoryType } = query;
+  async getAll(query: { page?: number; limit?: number; search?: string; categoryType?: string; workerType?: string }) {
+    const { page = 1, limit = 50, search, categoryType, workerType } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.SkillCategoryWhereInput = {};
@@ -12,6 +12,21 @@ export class SkillCategoryService {
       where.name = { contains: search, mode: 'insensitive' };
     }
     if (categoryType) where.categoryType = categoryType;
+
+    // Filter by workerType - map to categoryType if needed
+    if (workerType) {
+      const categoryTypeMap: Record<string, string> = {
+        blue: 'blue_collar',
+        white: 'white_collar',
+        trainer: 'trainer',
+      };
+      const mappedCategoryType = categoryTypeMap[workerType];
+      if (mappedCategoryType) {
+        where.OR = [{ workerType }, { categoryType: mappedCategoryType }];
+      } else {
+        where.workerType = workerType;
+      }
+    }
 
     const [categories, total] = await Promise.all([
       prisma.skillCategory.findMany({ where, skip, take: limit, orderBy: { name: 'asc' } }),

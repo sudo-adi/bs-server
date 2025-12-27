@@ -87,7 +87,7 @@ export class ProfileListQuery {
         };
       }
 
-      const [profiles, total] = await Promise.all([
+      const [profilesRaw, total] = await Promise.all([
         prisma.profile.findMany({
           where,
           skip,
@@ -111,10 +111,65 @@ export class ProfileListQuery {
             candidateApprovedAt: true,
             candidateApprovedByProfileId: true,
             profilePhotoURL: true,
+            // Include current project assignment
+            workerAssignments: {
+              where: {
+                removedAt: null, // Only active assignments
+              },
+              orderBy: {
+                deployedAt: 'desc',
+              },
+              take: 1, // Get most recent active assignment
+              select: {
+                id: true,
+                deployedAt: true,
+                stage: true,
+                project: {
+                  select: {
+                    id: true,
+                    name: true,
+                    projectCode: true,
+                    startDate: true,
+                    endDate: true,
+                    actualEndDate: true,
+                  },
+                },
+              },
+            },
           },
         }),
         prisma.profile.count({ where }),
       ]);
+
+      // Map profiles to include computed project fields
+      const profiles = profilesRaw.map((profile) => {
+        const currentAssignment = profile.workerAssignments?.[0];
+        const currentProject = currentAssignment?.project;
+
+        return {
+          id: profile.id,
+          candidateCode: profile.candidateCode,
+          workerCode: profile.workerCode,
+          workerType: profile.workerType,
+          profileType: profile.profileType,
+          firstName: profile.firstName,
+          middleName: profile.middleName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          altPhone: profile.altPhone,
+          email: profile.email,
+          isActive: profile.isActive,
+          currentStage: profile.currentStage,
+          createdAt: profile.createdAt,
+          candidateApprovedAt: profile.candidateApprovedAt,
+          candidateApprovedByProfileId: profile.candidateApprovedByProfileId,
+          profilePhotoURL: profile.profilePhotoURL,
+          // Computed project fields
+          currentProjectName: currentProject?.name || null,
+          currentDeploymentStartDate: currentAssignment?.deployedAt || currentProject?.startDate || null,
+          currentDeploymentEndDate: currentProject?.actualEndDate || currentProject?.endDate || null,
+        };
+      });
 
       return {
         data: profiles,
